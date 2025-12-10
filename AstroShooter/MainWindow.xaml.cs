@@ -44,6 +44,30 @@ namespace AstroShooter
             UCMenu UCMenu = new UCMenu();
             ScreenContainer.Children.Add(UCMenu);
             UCMenu.ButStart.Click += StartGame;
+            UCMenu.ButParameters.Click += AfficheParameters;
+            UCMenu.ButRules.Click += AfficheRules;
+        }
+
+
+        public void AfficheRules(object sender, RoutedEventArgs e)
+        {
+#if DEBUG
+            Console.WriteLine("AffichageRules");
+#endif
+
+            UCRules uCRules = new UCRules();
+            ScreenContainer.Children.Add(uCRules);
+
+        }
+
+        private void AfficheParameters(object sender, RoutedEventArgs e)
+        {
+#if DEBUG
+            Console.WriteLine("AffichageParametres");
+#endif
+
+            UCVolume uCVolume = new UCVolume();
+            ScreenContainer.Children.Add(uCVolume);
         }
 
         private void StartGame(object sender, RoutedEventArgs e)

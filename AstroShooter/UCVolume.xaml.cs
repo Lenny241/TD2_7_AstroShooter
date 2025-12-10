@@ -24,5 +24,17 @@ namespace AstroShooter
         {
             InitializeComponent();
         }
+
+        private void ButOk_Click(object sender, RoutedEventArgs e)
+        {
+            double volume = slidVitesse.Value;
+            // Retirer l'UC du conteneur si possible
+            if (this.Parent is Panel panel)
+                panel.Children.Remove(this);
+
+            // Récupérer la fenêtre parente
+            if (Window.GetWindow(this) is MainWindow main)
+                main.AfficheDemarrage();
+        }
     }
 }

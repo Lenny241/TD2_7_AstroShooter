@@ -16,13 +16,23 @@ using System.Windows.Shapes;
 namespace AstroShooter
 {
     /// <summary>
-    /// Logique d'interaction pour parameters.xaml
+    /// Logique d'interaction pour UCRules.xaml
     /// </summary>
-    public partial class parameters : UserControl
+    public partial class UCRules : UserControl
     {
-        public parameters()
+        public UCRules()
         {
             InitializeComponent();
+        }
+
+        private void ButOk_Click(object sender, RoutedEventArgs e)
+        {
+            if (this.Parent is Panel panel)
+                panel.Children.Remove(this);
+
+            // Récupérer la fenêtre parente
+            if (Window.GetWindow(this) is MainWindow main)
+                main.AfficheDemarrage();
         }
     }
 }
