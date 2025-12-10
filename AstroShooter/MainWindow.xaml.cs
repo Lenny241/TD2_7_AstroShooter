@@ -103,7 +103,7 @@ namespace AstroShooter
 
             // Chargement de l'image de tuile
             BitmapImage tileImage = new BitmapImage(
-                new Uri("pack://application:,,,/asset/classicTile.png"));
+                new Uri("pack://application:,,,/asset/ground/classicGroundTile1.png"));
 
             // Génération séquentielle de la grille 20x20
             for (int row = 0; row < MapSize; row++)
