@@ -36,8 +36,15 @@ namespace AstroShooter
         {
             InitializeComponent();
             Loaded += MainWindow_Loaded;
+            AfficheDemarrage();
+            
+            
         }
-
+        private void AfficheDemarrage()
+        {
+            UCMenu uc = new UCMenu();
+            this.Content = uc;
+        }
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             // Définir la taille du canvas à 5x3 tuiles
