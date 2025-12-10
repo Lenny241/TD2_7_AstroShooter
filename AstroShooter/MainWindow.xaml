@@ -5,8 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AstroShooter"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="AstroShooter" 
+        ResizeMode="NoResize"
+        KeyDown="Window_KeyDown" 
+        KeyUp="Window_KeyUp"
+        Focusable="True"
+        SizeToContent="WidthAndHeight" Width="1100" Height="850">
 
-    </Grid>
+    <Canvas x:Name="GameCanvas" ClipToBounds="True">
+        <!-- Le contenu sera généré dynamiquement -->
+    </Canvas>
 </Window>

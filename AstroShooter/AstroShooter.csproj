@@ -8,4 +8,26 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <None Remove="asset\classicTile.png" />
+    <None Remove="asset\florian-becavin-rock0.jpg" />
+    <None Remove="asset\florian-becavin-rock1.jpg" />
+    <None Remove="asset\florian-becavin-rock2.jpg" />
+    <None Remove="asset\florian-becavin-rock3.jpg" />
+    <None Remove="asset\florian-becavin-rock5.jpg" />
+    <None Remove="asset\tile1.png" />
+    <None Remove="asset\tile1TEST.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="asset\classicTile.png" />
+    <Resource Include="asset\florian-becavin-rock0.jpg" />
+    <Resource Include="asset\florian-becavin-rock1.jpg" />
+    <Resource Include="asset\florian-becavin-rock2.jpg" />
+    <Resource Include="asset\florian-becavin-rock3.jpg" />
+    <Resource Include="asset\florian-becavin-rock5.jpg" />
+    <Resource Include="asset\tile1.png" />
+    <Resource Include="asset\tile1TEST.png" />
+  </ItemGroup>
+
 </Project>
