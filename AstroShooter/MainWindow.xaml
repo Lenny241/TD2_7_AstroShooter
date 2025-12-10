@@ -10,9 +10,51 @@
         KeyDown="Window_KeyDown" 
         KeyUp="Window_KeyUp"
         Focusable="True"
-        SizeToContent="WidthAndHeight" Width="1100" Height="850">
+        SizeToContent="WidthAndHeight" Width="800" Height="450">
 
-    <Canvas x:Name="GameCanvas" ClipToBounds="True">
-        <!-- Le contenu sera généré dynamiquement -->
-    </Canvas>
+    <Grid x:Name="gridMain" Height="434" Width="800">
+        <Grid x:Name="GridMenu" Height="434" Width="800" Panel.ZIndex="10">
+            <Label x:Name="labNomJeu" Content="AstroShooter" HorizontalAlignment="Center" Margin="0,75,0,0" VerticalAlignment="Top" FontSize="48" FontFamily="72 Black">
+                <Label.Foreground>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                        <GradientStop Color="Black"/>
+                        <GradientStop Color="#FF0012A7" Offset="1"/>
+                    </LinearGradientBrush>
+                </Label.Foreground>
+            </Label>
+            <Button x:Name="ButStart" Content="Start" HorizontalAlignment="Center" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Center" BorderBrush="Black" Foreground="White" Margin="-3,0,0,0">
+                <Button.Background>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                        <GradientStop Color="Black"/>
+                        <GradientStop Color="#FF194DCA" Offset="1"/>
+                    </LinearGradientBrush>
+                </Button.Background>
+            </Button>
+            <Button x:Name="ButRules" Content="Rules" HorizontalAlignment="Center" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Center" BorderBrush="Black" Foreground="White" Margin="0,100,0,0">
+                <Button.Background>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                        <GradientStop Color="Black"/>
+                        <GradientStop Color="#FF194DCA" Offset="1"/>
+                    </LinearGradientBrush>
+                </Button.Background>
+            </Button>
+            <Button x:Name="ButParameters" Content="Parameters" HorizontalAlignment="Center" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Center" BorderBrush="Black" Foreground="White" Margin="0,200,0,0">
+                <Button.Background>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                        <GradientStop Color="Black"/>
+                        <GradientStop Color="#FF194DCA" Offset="1"/>
+                    </LinearGradientBrush>
+                </Button.Background>
+            </Button>
+        </Grid>
+        <Canvas x:Name="GameCanvas" ClipToBounds="True" Opacity="0.9">
+            <Canvas.Effect>
+                <BlurEffect RenderingBias="Quality" Radius="10"/>
+            </Canvas.Effect>
+
+
+            <!-- Le contenu sera généré dynamiquement -->
+        </Canvas>
+
+    </Grid>
 </Window>

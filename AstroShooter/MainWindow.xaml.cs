@@ -45,12 +45,12 @@ namespace AstroShooter
             GameCanvas.Height = ViewportHeight;
 
             GenerateMap();
-            CreatePlayer();
-            CenterMapOnPlayer();
+            //CreatePlayer();
+            //CenterMapOnPlayer();
 
 
             // Démarrer la boucle de jeu synchronisée avec le rendu
-            gameTime.Start();
+            //gameTime.Start();
             lastFrameTime = gameTime.Elapsed;
             CompositionTarget.Rendering += GameLoop;
         }
