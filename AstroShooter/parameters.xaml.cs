@@ -16,14 +16,13 @@ using System.Windows.Shapes;
 namespace AstroShooter
 {
     /// <summary>
-    /// Logique d'interaction pour UCMenu.xaml
+    /// Logique d'interaction pour parameters.xaml
     /// </summary>
-    public partial class UCMenu : UserControl
+    public partial class parameters : UserControl
     {
-        public UCMenu()
+        public parameters()
         {
             InitializeComponent();
         }
-
     }
 }

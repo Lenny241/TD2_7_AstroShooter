@@ -37,30 +37,38 @@ namespace AstroShooter
             InitializeComponent();
             Loaded += MainWindow_Loaded;
             AfficheDemarrage();
-            
-            
         }
-        private void AfficheDemarrage()
+        public void AfficheDemarrage()
         {
-            UCMenu uc = new UCMenu();
-            this.Content = uc;
+            ScreenContainer.Children.Clear();
+            UCMenu UCMenu = new UCMenu();
+            ScreenContainer.Children.Add(UCMenu);
+            UCMenu.ButStart.Click += StartGame;
         }
+
+        private void StartGame(object sender, RoutedEventArgs e)
+        {
+            gameTime.Start();
+            CreatePlayer();
+            CenterMapOnPlayer();
+#if DEBUG
+            Console.WriteLine("StartGame");
+#endif
+            ScreenContainer.Children.Clear();
+            GameCanvas.Effect = null;
+        }
+
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             // Définir la taille du canvas à 5x3 tuiles
             GameCanvas.Width = ViewportWidth;
             GameCanvas.Height = ViewportHeight;
-
             GenerateMap();
-            //CreatePlayer();
-            //CenterMapOnPlayer();
-
-
-            // Démarrer la boucle de jeu synchronisée avec le rendu
-            //gameTime.Start();
             lastFrameTime = gameTime.Elapsed;
             CompositionTarget.Rendering += GameLoop;
         }
+
+        
 
         private void GameLoop(object? sender, EventArgs e)
         {

@@ -13,15 +13,17 @@
         SizeToContent="WidthAndHeight" Width="800" Height="450">
 
     <Grid x:Name="gridMain" Height="434" Width="800">
-        
+
+        <!-- Conteneur pour le menu, règles, paramètres, etc. -->
+        <Grid x:Name="ScreenContainer" Panel.ZIndex="10" />
+
+        <!-- Canvas du jeu -->
         <Canvas x:Name="GameCanvas" ClipToBounds="True" Opacity="0.9">
             <Canvas.Effect>
                 <BlurEffect RenderingBias="Quality" Radius="10"/>
             </Canvas.Effect>
-
-
-            <!-- Le contenu sera généré dynamiquement -->
         </Canvas>
 
     </Grid>
+
 </Window>
