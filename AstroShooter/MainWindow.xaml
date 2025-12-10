@@ -3,14 +3,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:AstroShooter"
         mc:Ignorable="d"
         Title="AstroShooter" 
         ResizeMode="NoResize"
         KeyDown="Window_KeyDown" 
         KeyUp="Window_KeyUp"
         Focusable="True"
-        SizeToContent="WidthAndHeight" Width="1375" Height="850">
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="CenterScreen">
 
     <Grid x:Name="gridMain" Height="850" Width="1375">
 

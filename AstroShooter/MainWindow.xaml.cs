@@ -10,19 +10,11 @@ namespace AstroShooter
 {
     public partial class MainWindow : Window
     {
-        Random random = new Random();
+        // Random random = new Random();   >>>>>>>>>>>  NE PAS SUPPRIMER - POTENTIELLEMENT UTILE PLUS TARD
 
         private const int MapSize = 20;
         private const int TileSize = 275;
         private const double MoveSpeed = 400; // Pixels par seconde
-
-        // Taille de la zone visible en tuiles
-        private const int ViewportTilesX = 5;
-        private const int ViewportTilesY = 3;
-
-        // Dimensions de la fenêtre de jeu en pixels
-        private readonly double ViewportWidth = ViewportTilesX * TileSize;
-        private readonly double ViewportHeight = ViewportTilesY * TileSize;
 
         private Canvas mapCanvas = null!;
         private Rectangle player = null!;
@@ -86,9 +78,6 @@ namespace AstroShooter
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            // Définir la taille du canvas à 5x3 tuiles
-            GameCanvas.Width = ViewportWidth;
-            GameCanvas.Height = ViewportHeight;
             GenerateMap();
             lastFrameTime = gameTime.Elapsed;
             CompositionTarget.Rendering += GameLoop;
@@ -182,7 +171,6 @@ namespace AstroShooter
         }
 
 
-
         private void CreatePlayer()
         {
             // Création du personnage temporaire (cube rouge)
@@ -200,8 +188,8 @@ namespace AstroShooter
         private void CenterMapOnPlayer()
         {
             // Calcule l'offset pour centrer la map sur le joueur (basé sur le viewport)
-            double centerX = (ViewportWidth - player.Width) / 2;
-            double centerY = (ViewportHeight - player.Height) / 2;
+            double centerX = (GameCanvas.ActualWidth - player.Width) / 2;
+            double centerY = (GameCanvas.ActualHeight - player.Height) / 2;
 
             // Position initiale du joueur au centre de la map
             mapOffsetX = centerX - (MapSize * TileSize / 2.0) + (player.Width / 2);
@@ -213,8 +201,8 @@ namespace AstroShooter
         private void UpdatePositions()
         {
             // Le joueur reste toujours au centre du viewport
-            double centerX = (ViewportWidth - player.Width) / 2;
-            double centerY = (ViewportHeight - player.Height) / 2;
+            double centerX = (GameCanvas.ActualWidth - player.Width) / 2;
+            double centerY = (GameCanvas.ActualHeight - player.Height) / 2;
 
             Canvas.SetLeft(player, centerX);
             Canvas.SetTop(player, centerY);

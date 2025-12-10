@@ -10,5 +10,4 @@ namespace AstroShooter
     public partial class App : Application
     {
     }
-
 }
