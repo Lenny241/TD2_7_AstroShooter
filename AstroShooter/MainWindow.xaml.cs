@@ -10,6 +10,8 @@ namespace AstroShooter
 {
     public partial class MainWindow : Window
     {
+        Random random = new Random();
+
         private const int MapSize = 20;
         private const int TileSize = 275;
         private const double MoveSpeed = 400; // Pixels par seconde
@@ -126,22 +128,27 @@ namespace AstroShooter
 
         private void GenerateMap()
         {
-            // Création du canvas qui contient la map
-            mapCanvas = new Canvas
+            // Initialisation de mapCanvas si elle n'a pas encore été instanciée
+            if (mapCanvas == null)
             {
-                Width = MapSize * TileSize,
-                Height = MapSize * TileSize
-            };
+                mapCanvas = new Canvas();
+            }
+
+            // Création du tableau pour stocker les tuiles
+            Image[,] tileGrid = new Image[MapSize, MapSize];
+
 
             // Chargement de l'image de tuile
             BitmapImage tileImage = new BitmapImage(
                 new Uri("pack://application:,,,/asset/ground/classicGroundTile1.png"));
 
-            // Génération séquentielle de la grille 20x20
+
+            // Remplissage du tableau avec les tuiles
             for (int row = 0; row < MapSize; row++)
             {
-                for (int col = 0; col < MapSize; col++)
+                for (int col = 0; col < MapSize; col++) 
                 {
+                    // Création d'une tuile
                     Image tile = new Image
                     {
                         Source = tileImage,
@@ -149,14 +156,32 @@ namespace AstroShooter
                         Height = TileSize
                     };
 
+                    // Stocker la tuile dans le tableau
+                    tileGrid[row, col] = tile;
+                }
+            }
+
+            // Ajout des tuiles dans le Canvas après génération du tableau
+            for (int row = 0; row < MapSize; row++)
+            {
+                for (int col = 0; col < MapSize; col++)
+                {
+                    Image tile = tileGrid[row, col];
+
+                    // Positionner la tuile dans le Canvas
                     Canvas.SetLeft(tile, col * TileSize);
                     Canvas.SetTop(tile, row * TileSize);
+
+                    // Ajouter la tuile au Canvas
                     mapCanvas.Children.Add(tile);
                 }
             }
 
+            // Ajouter le Canvas dans la scène de jeu
             GameCanvas.Children.Add(mapCanvas);
         }
+
+
 
         private void CreatePlayer()
         {
