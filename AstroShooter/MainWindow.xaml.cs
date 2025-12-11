@@ -21,9 +21,10 @@ namespace AstroShooter
         public Rectangle bullet = null!;
 
         //Map management
-        private const int MapSize = 20;
+        private const int MapSize = 26;
         private const int TileSize = 275;
-        private const double MoveSpeed = 400;
+        private const double MoveSpeed = 600;
+        private List<Rect> obstacleHitboxes = new();
 
         //Player management
         private Canvas mapCanvas = null!;
@@ -126,11 +127,44 @@ namespace AstroShooter
             if (pressedKeys.Contains(Key.D) || pressedKeys.Contains(Key.Right))
                 deltaX -= 1;
 
+
             // Appliquer le mouvement avec delta time
             if (deltaX != 0 || deltaY != 0)
             {
-                mapOffsetX += deltaX * MoveSpeed * deltaTime;
-                mapOffsetY += deltaY * MoveSpeed * deltaTime;
+                // Position actuelle du joueur sur l'écran (fixe)
+                double playerScreenX = Canvas.GetLeft(player);
+                double playerScreenY = Canvas.GetTop(player);
+
+
+                // TEST AXE X 
+                double proposedMapOffsetX = mapOffsetX + (deltaX * MoveSpeed * deltaTime);
+
+                // Calcul de la position du joueur DANS LE MONDE
+                // Formule : PositionJoueurMonde = PositionJoueurEcran - PositionCarteEcran
+                double playerWorldX_Future = playerScreenX - proposedMapOffsetX;
+                double playerWorldY_Current = playerScreenY - mapOffsetY;
+
+                Rect playerRectX = new Rect(playerWorldX_Future, playerWorldY_Current, player.Width, player.Height);
+
+                if (!CheckCollision(playerRectX))
+                {
+                    mapOffsetX = proposedMapOffsetX; // Pas de collision, on valide le mouvement X
+                }
+
+
+                // TEST AXE Y
+                double proposedMapOffsetY = mapOffsetY + (deltaY * MoveSpeed * deltaTime);
+
+                // On recalcule avec la potentielle nouvelle position X validée juste avant
+                double playerWorldX_Current = playerScreenX - mapOffsetX;
+                double playerWorldY_Future = playerScreenY - proposedMapOffsetY;
+
+                Rect playerRectY = new Rect(playerWorldX_Current, playerWorldY_Future, player.Width, player.Height);
+
+                if (!CheckCollision(playerRectY))
+                {
+                    mapOffsetY = proposedMapOffsetY; // Pas de collision, on valide le mouvement Y
+                }
 
                 UpdatePositions();
             }
@@ -193,8 +227,8 @@ namespace AstroShooter
                     Image tile = new Image
                     {
                         Source = tileImage,
-                        Width = TileSize,
-                        Height = TileSize
+                        Width = TileSize +1,
+                        Height = TileSize +1
                     };
                     tileGrid[row, col] = tile;
                 }
@@ -212,7 +246,8 @@ namespace AstroShooter
                     Panel.SetZIndex(tile, 0); // Le sol est en bas (Couche 0)
                     mapCanvas.Children.Add(tile);
 
-                    bool estBordure = (row == 1 || col == 1 || row == MapSize - 2 || col == MapSize - 2);
+                    bool estBordure = (row == 0 || col == 0 || row == 1 || col == 1 || row == 2 || col == 2 ||
+                                       row == MapSize - 1 || col == MapSize - 1 || row == MapSize - 2 || col == MapSize - 2 || row == MapSize - 3 || col == MapSize - 3);
 
 
                     bool mettreObstacle = false;
@@ -235,15 +270,27 @@ namespace AstroShooter
                         Image obstacle = new Image
                         {
                             Source = obstacleImage,
-                            Width = TileSize,
-                            Height = TileSize
+                            // On garde vos dimensions visuelles
+                            Width = TileSize + 25,
+                            Height = TileSize + 75
                         };
 
-                        Canvas.SetLeft(obstacle, col * TileSize);
-                        Canvas.SetTop(obstacle, row * TileSize);
+                        double obsLeft = col * TileSize - 15;
+                        double obsTop = row * TileSize - 60;
+
+                        Canvas.SetLeft(obstacle, obsLeft);
+                        Canvas.SetTop(obstacle, obsTop);
                         Panel.SetZIndex(obstacle, 1);
 
                         mapCanvas.Children.Add(obstacle);
+
+                        Rect hitBox = new Rect(
+                            obsLeft + 40,   // Marge à gauche
+                            obsTop + 80,    // Marge en haut (le rocher est haut visuellement)
+                            TileSize - 10,  // Largeur réelle de l'obstacle
+                            TileSize - 10   // Hauteur réelle de l'obstacle
+                        );
+                        obstacleHitboxes.Add(hitBox);
                     }
                 }
             }
@@ -352,7 +399,17 @@ namespace AstroShooter
 #endif
             }
         }
-
+        private bool CheckCollision(Rect playerRect)
+        {
+            foreach (Rect obstacle in obstacleHitboxes)
+            {
+                if (playerRect.IntersectsWith(obstacle))
+                {
+                    return true; // Collision détectée !
+                }
+            }
+            return false; // Voie libre
+        }
 
     }
 }
