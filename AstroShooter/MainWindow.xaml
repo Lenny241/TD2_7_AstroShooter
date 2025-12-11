@@ -18,7 +18,7 @@
         <Grid x:Name="ScreenContainer" Panel.ZIndex="10" />
 
         <!-- Canvas du jeu -->
-        <Canvas x:Name="GameCanvas" ClipToBounds="True" Opacity="0.9">
+        <Canvas x:Name="GameCanvas" ClipToBounds="True" Opacity="0.9" Focusable="True" KeyDown="GameCanvas_KeyDown">
             <Canvas.Effect>
                 <BlurEffect RenderingBias="Quality" Radius="10"/>
             </Canvas.Effect>
