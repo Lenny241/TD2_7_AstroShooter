@@ -9,11 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>    
-	  <None Remove="asset\ground\classicGroundTile1.png" />
+	  <None Remove="asset\ground\classicGroundTile1.png" />    
+	  <None Remove="asset\ground\rock.png" />
   </ItemGroup>
 
   <ItemGroup>
     <Resource Include="asset\ground\classicGroundTile1.png" />
+    <Resource Include="asset\ground\rock.png" />
   </ItemGroup>
 
 </Project>

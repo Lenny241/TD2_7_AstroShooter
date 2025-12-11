@@ -10,7 +10,7 @@ namespace AstroShooter
 {
     public partial class MainWindow : Window
     {
-        // Random random = new Random();   >>>>>>>>>>>  NE PAS SUPPRIMER - POTENTIELLEMENT UTILE PLUS TARD
+        Random random = new Random();
 
         private const int MapSize = 20;
         private const int TileSize = 275;
@@ -117,57 +117,95 @@ namespace AstroShooter
 
         private void GenerateMap()
         {
-            // Initialisation de mapCanvas si elle n'a pas encore été instanciée
+            // Initialisation du Canvas
             if (mapCanvas == null)
             {
                 mapCanvas = new Canvas();
             }
 
-            // Création du tableau pour stocker les tuiles
+            // Nettoyer le canvas si on régénère la carte (évite de superposer des cartes)
+            mapCanvas.Children.Clear();
+
+            // Initialisation des outils
             Image[,] tileGrid = new Image[MapSize, MapSize];
+            Random rnd = new Random();
 
-
-            // Chargement de l'image de tuile
+            // Chargement des images (UNE SEULE FOIS pour la performance)
             BitmapImage tileImage = new BitmapImage(
                 new Uri("pack://application:,,,/asset/ground/classicGroundTile1.png"));
 
+            BitmapImage obstacleImage = new BitmapImage(
+                new Uri("pack://application:,,,/asset/ground/rock.png"));
 
-            // Remplissage du tableau avec les tuiles
+
+            // Création des tuiles de sol
             for (int row = 0; row < MapSize; row++)
             {
-                for (int col = 0; col < MapSize; col++) 
+                for (int col = 0; col < MapSize; col++)
                 {
-                    // Création d'une tuile
                     Image tile = new Image
                     {
                         Source = tileImage,
                         Width = TileSize,
                         Height = TileSize
                     };
-
-                    // Stocker la tuile dans le tableau
                     tileGrid[row, col] = tile;
                 }
             }
 
-            // Ajout des tuiles dans le Canvas après génération du tableau
+            // Affichage du sol ET ajout des obstacles
             for (int row = 0; row < MapSize; row++)
             {
                 for (int col = 0; col < MapSize; col++)
                 {
-                    Image tile = tileGrid[row, col];
 
-                    // Positionner la tuile dans le Canvas
+                    Image tile = tileGrid[row, col];
                     Canvas.SetLeft(tile, col * TileSize);
                     Canvas.SetTop(tile, row * TileSize);
-
-                    // Ajouter la tuile au Canvas
+                    Panel.SetZIndex(tile, 0); // Le sol est en bas (Couche 0)
                     mapCanvas.Children.Add(tile);
+
+                    bool estBordure = (row == 1 || col == 1 || row == MapSize - 2 || col == MapSize - 2);
+
+
+                    bool mettreObstacle = false;
+
+                    if (estBordure)
+                    {
+                        mettreObstacle = true; // Mur obligatoire
+                    }
+                    else
+                    {
+                        // 10% de chance d'avoir un rocher
+                        if (rnd.Next(0, 100) < 10)
+                        {
+                            mettreObstacle = true;
+                        }
+                    }
+
+                    if (mettreObstacle)
+                    {
+                        Image obstacle = new Image
+                        {
+                            Source = obstacleImage,
+                            Width = TileSize,
+                            Height = TileSize
+                        };
+
+                        Canvas.SetLeft(obstacle, col * TileSize);
+                        Canvas.SetTop(obstacle, row * TileSize);
+                        Panel.SetZIndex(obstacle, 1);
+
+                        mapCanvas.Children.Add(obstacle);
+                    }
                 }
             }
 
-            // Ajouter le Canvas dans la scène de jeu
-            GameCanvas.Children.Add(mapCanvas);
+            // Ajouter le Canvas à la fenêtre s'il n'y est pas déjà
+            if (!GameCanvas.Children.Contains(mapCanvas))
+            {
+                GameCanvas.Children.Add(mapCanvas);
+            }
         }
 
 
