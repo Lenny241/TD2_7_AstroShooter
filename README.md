@@ -1,2 +1,2 @@
-Xznoow : Antoine Degorges
-Lenny241: Lenny Poncet
+Xznoow, NicolasCroute : Antoine Degorges
+Lenny241, saghoure : Lenny Poncet
