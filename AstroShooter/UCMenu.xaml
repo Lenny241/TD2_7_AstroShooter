@@ -34,7 +34,7 @@
                 </LinearGradientBrush>
             </Button.Background>
         </Button>
-        <Button x:Name="ButParameters" Content="Parameters" HorizontalAlignment="Center" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Center" BorderBrush="Black" Foreground="White" Margin="0,200,0,0">
+        <Button x:Name="ButParameters" Content="Parameters" HorizontalAlignment="Center" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Center" BorderBrush="Black" Foreground="White" Margin="0,200,0,0" Click="ButParameters_Click">
             <Button.Background>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                     <GradientStop Color="Black"/>

@@ -41,6 +41,7 @@ namespace AstroShooter
             InitializeComponent();
             Loaded += MainWindow_Loaded;
             AfficheDemarrage();
+            DemarrageMusique();
         }
         public void AfficheDemarrage()
         {
@@ -48,10 +49,28 @@ namespace AstroShooter
             UCMenu UCMenu = new UCMenu();
             ScreenContainer.Children.Add(UCMenu);
             UCMenu.ButStart.Click += StartGame;
-            UCMenu.ButParameters.Click += AfficheParameters;
             UCMenu.ButRules.Click += AfficheRules;
         }
 
+        private static MediaPlayer music;
+
+        public void DemarrageMusique()
+        {
+#if DEBUG
+            Console.WriteLine("Lancement musique");
+#endif
+            music=new MediaPlayer();
+            music.Open(new Uri(AppDomain.CurrentDomain.BaseDirectory+"assets/sons/musiqueFond.mp3"));
+            music.Volume = 1.0; // Volume initial
+            music.MediaEnded += RelanceMusique;
+            music.Play();
+        }
+
+        private void RelanceMusique(object? sender, EventArgs e)
+        {
+            music.Position = TimeSpan.Zero;
+            music.Play();
+        }
         public void AfficheRules(object sender, RoutedEventArgs e)
         {
 #if DEBUG
@@ -60,16 +79,6 @@ namespace AstroShooter
             UCRules uCRules = new UCRules();
             ScreenContainer.Children.Add(uCRules);
 
-        }
-
-        private void AfficheParameters(object sender, RoutedEventArgs e)
-        {
-#if DEBUG
-            Console.WriteLine("AffichageParametres");
-#endif
-
-            UCVolume uCVolume = new UCVolume();
-            ScreenContainer.Children.Add(uCVolume);
         }
 
         private void StartGame(object sender, RoutedEventArgs e)

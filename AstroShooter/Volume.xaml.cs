@@ -10,31 +10,28 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
 
 namespace AstroShooter
 {
     /// <summary>
-    /// Logique d'interaction pour UCVolume.xaml
+    /// Logique d'interaction pour Volume.xaml
     /// </summary>
-    public partial class UCVolume : UserControl
+    public partial class Volume : Window
     {
-        public UCVolume()
+        public Volume()
         {
             InitializeComponent();
         }
 
         private void ButOk_Click(object sender, RoutedEventArgs e)
         {
-            double volume = slidVitesse.Value;
-            // Retirer l'UC du conteneur si possible
-            if (this.Parent is Panel panel)
-                panel.Children.Remove(this);
+            DialogResult = true;
+        }
 
-            // Récupérer la fenêtre parente
-            if (Window.GetWindow(this) is MainWindow main)
-                main.AfficheDemarrage();
+        private void ButCancel_Click(object sender, RoutedEventArgs e)
+        {
+            DialogResult = false;
         }
     }
 }

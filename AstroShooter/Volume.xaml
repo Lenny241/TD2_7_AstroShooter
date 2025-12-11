@@ -1,0 +1,44 @@
+﻿<Window x:Class="AstroShooter.Volume"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:AstroShooter"
+        mc:Ignorable="d"
+        Title="Volume" Height="450" Width="800">
+    <Grid Background="#FF89CFD8">
+        <Label x:Name="labParameter" Content="Parameters" HorizontalAlignment="Center" Margin="0,75,0,0" VerticalAlignment="Top" FontSize="30" FontFamily="72 Black">
+            <Label.Foreground>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#FF0012A7" Offset="1"/>
+                </LinearGradientBrush>
+            </Label.Foreground>
+        </Label>
+        <Label x:Name="labVolume" Content="Volume" HorizontalAlignment="Center" Margin="0,184,0,0" VerticalAlignment="Top" FontSize="20" FontFamily="72 Black">
+            <Label.Foreground>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#FF0012A7" Offset="1"/>
+                </LinearGradientBrush>
+            </Label.Foreground>
+        </Label>
+        <Button x:Name="ButOk" Content="Ok" HorizontalAlignment="Left" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Top" BorderBrush="Black" Foreground="White" Margin="254,314,0,0" Click="ButOk_Click">
+            <Button.Background>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#FF194DCA" Offset="1"/>
+                </LinearGradientBrush>
+            </Button.Background>
+        </Button>
+        <Button x:Name="ButCancel" Content="Cancel" HorizontalAlignment="Left" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Top" BorderBrush="Black" Foreground="White" Margin="448,314,0,0" Click="ButCancel_Click">
+            <Button.Background>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#FF194DCA" Offset="1"/>
+                </LinearGradientBrush>
+            </Button.Background>
+        </Button>
+        <Slider x:Name="slidVolume" Width="120" Minimum="1" Maximum="10" Value="2" TickFrequency="1" IsSnapToTickEnabled="True" TickPlacement="BottomRight" AutoToolTipPlacement="BottomRight" HorizontalAlignment="Center" Margin="0,260,0,-96"/>
+    </Grid>
+</Window>

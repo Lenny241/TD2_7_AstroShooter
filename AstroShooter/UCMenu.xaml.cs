@@ -25,5 +25,40 @@ namespace AstroShooter
             InitializeComponent();
         }
 
+        public void ButParameters_Click(object sender, RoutedEventArgs e)
+        {
+            Volume volume = new Volume();
+            volume.Owner = Window.GetWindow(this);
+            volume.ShowDialog();
+            bool ? rep = volume.DialogResult;
+            if (rep == true)
+            {
+                double musicVolume = volume.slidVolume.Value;
+#if DEBUG
+                Console.WriteLine("Volume" + musicVolume);
+#endif
+            }
+
+
+
+            //            bool? rep = volume.ShowDialog();
+            //            if (rep == true)
+            //            {                 
+            //                double musicVolume = volume.slidVolume.Value;
+            //#if DEBUG
+            //                Console.WriteLine("Volume" + volume);
+            //#endif
+            //                // Appliquer les volumes (exemple)
+            //                // AudioManager.SetMusicVolume(musicVolume);
+            //                // AudioManager.SetSFXVolume(sfxVolume);
+            //            }
+
+
+#if DEBUG
+            Console.WriteLine("AffichageVolu");
+#endif
+
+            //bool? rep = parametreWindow.ShowDialog();
+        }
     }
 }

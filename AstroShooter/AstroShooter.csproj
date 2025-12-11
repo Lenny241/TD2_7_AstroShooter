@@ -18,4 +18,10 @@
     <Resource Include="asset\ground\rock.png" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="asset\sons\music.mp3">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>
