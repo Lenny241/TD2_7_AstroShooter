@@ -39,6 +39,6 @@
                 </LinearGradientBrush>
             </Button.Background>
         </Button>
-        <Slider x:Name="slidVolume" Width="120" Minimum="1" Maximum="10" Value="2" TickFrequency="1" IsSnapToTickEnabled="True" TickPlacement="BottomRight" AutoToolTipPlacement="BottomRight" HorizontalAlignment="Center" Margin="0,260,0,-96"/>
+        <Slider x:Name="slidVolume" Width="120" Minimum="0" Maximum="10" Value="5" TickFrequency="1" IsSnapToTickEnabled="True" TickPlacement="BottomRight" AutoToolTipPlacement="BottomRight" HorizontalAlignment="Center" Margin="0,260,0,-96"/>
     </Grid>
 </Window>

@@ -14,6 +14,9 @@ namespace AstroShooter
     {
         Random random = new Random();
 
+        //musique
+        public static MediaPlayer music;
+
         //Bullet management
         private List<Rectangle> bullets = new();
         private List<Vector> directions = new();
@@ -53,7 +56,7 @@ namespace AstroShooter
             UCMenu.ButRules.Click += AfficheRules;
         }
 
-        private static MediaPlayer music;
+        
 
         public void DemarrageMusique()
         {
@@ -61,8 +64,8 @@ namespace AstroShooter
             Console.WriteLine("Lancement musique");
 #endif
             music=new MediaPlayer();
-            music.Open(new Uri(AppDomain.CurrentDomain.BaseDirectory+"assets/sons/musiqueFond.mp3"));
-            music.Volume = 1.0; // Volume initial
+            music.Open(new Uri(AppDomain.CurrentDomain.BaseDirectory+"asset/sons/music.mp3"));
+            music.Volume = 0.5; // Volume initial
             music.MediaEnded += RelanceMusique;
             music.Play();
         }

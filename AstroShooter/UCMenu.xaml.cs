@@ -36,29 +36,14 @@ namespace AstroShooter
                 double musicVolume = volume.slidVolume.Value;
 #if DEBUG
                 Console.WriteLine("Volume" + musicVolume);
+                MainWindow.music.Volume = musicVolume / 100;
+
 #endif
+
             }
-
-
-
-            //            bool? rep = volume.ShowDialog();
-            //            if (rep == true)
-            //            {                 
-            //                double musicVolume = volume.slidVolume.Value;
-            //#if DEBUG
-            //                Console.WriteLine("Volume" + volume);
-            //#endif
-            //                // Appliquer les volumes (exemple)
-            //                // AudioManager.SetMusicVolume(musicVolume);
-            //                // AudioManager.SetSFXVolume(sfxVolume);
-            //            }
-
-
 #if DEBUG
             Console.WriteLine("AffichageVolu");
 #endif
-
-            //bool? rep = parametreWindow.ShowDialog();
         }
     }
 }
