@@ -9,12 +9,16 @@
   </PropertyGroup>
 
   <ItemGroup>    
+	  <None Remove="asset\character\vaisseau.png" />    
 	  <None Remove="asset\ground\classicGroundTile1.png" />    
+	  <None Remove="asset\ground\meteor.png" />    
 	  <None Remove="asset\ground\rock.png" />
   </ItemGroup>
 
   <ItemGroup>
+    <Resource Include="asset\character\vaisseau.png" />
     <Resource Include="asset\ground\classicGroundTile1.png" />
+    <Resource Include="asset\ground\meteor.png" />
     <Resource Include="asset\ground\rock.png" />
   </ItemGroup>
 
