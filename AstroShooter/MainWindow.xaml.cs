@@ -1,5 +1,7 @@
 ﻿using Microsoft.Windows.Themes;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
+using System.DirectoryServices;
 using System.Runtime.CompilerServices;
 using System.Security.Permissions;
 using System.Windows;
@@ -10,11 +12,13 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
+
 namespace AstroShooter
 {
+
     public partial class MainWindow : Window
     {
-        Random random = new Random();
+        Random rnd = new Random();
 
         //musique
         public static MediaPlayer music;
@@ -27,6 +31,9 @@ namespace AstroShooter
         private List<Vector> directions = new();
         private const double bulletSpeed = 400;
         public Rectangle bullet = null!;
+
+        //Meteo management
+        private List<Image> meteors = new();
 
         //Map management
         private const int MapSize = 26;
@@ -128,6 +135,7 @@ namespace AstroShooter
             GenerateMap();
             lastFrameTime = gameTime.Elapsed;
             CompositionTarget.Rendering += GameLoop;
+            GameCanvas.MouseLeftButtonDown += GameCanvas_MouseLeftButtonDown;
         }
 
         private void AffichePauseMenu()
@@ -252,7 +260,6 @@ namespace AstroShooter
 
             // Initialisation des outils
             Image[,] tileGrid = new Image[MapSize, MapSize];
-            Random rnd = new Random();
 
             // Chargement des images (UNE SEULE FOIS pour la performance)
             BitmapImage tileImage = new BitmapImage(
@@ -261,8 +268,6 @@ namespace AstroShooter
             BitmapImage obstacleImage = new BitmapImage(
                 new Uri("pack://application:,,,/asset/ground/rock.png"));
 
-            BitmapImage meteorImage = new BitmapImage(
-                new Uri("pack://application:,,,/asset/ground/meteor.png"));
 
             BitmapImage rocketImage = new BitmapImage(
                 new Uri("pack://application:,,,/asset/character/vaisseau.png"));
@@ -289,11 +294,11 @@ namespace AstroShooter
                 for (int col = 0; col < MapSize; col++)
                 {
 
-                    Image tile = tileGrid[row, col]; 
-                    Canvas.SetLeft(tile, col * TileSize); 
-                    Canvas.SetTop(tile, row * TileSize); 
+                    Image tile = tileGrid[row, col];
+                    Canvas.SetLeft(tile, col * TileSize);
+                    Canvas.SetTop(tile, row * TileSize);
                     Panel.SetZIndex(tile, 0); // Le sol est en bas (Couche 0)
-                    mapCanvas.Children.Add(tile); 
+                    mapCanvas.Children.Add(tile);
 
                     // bordure de la carte en 3 tuiles de large
                     bool estBordure = (row == 0 || col == 0 || row == 1 || col == 1 || row == 2 || col == 2 ||
@@ -380,31 +385,7 @@ namespace AstroShooter
                     }
                     else
                     {
-                        
-                        if (rnd.Next(0, 100) < 1)
-                        {
-                            Image meteor = new Image
-                            {
-                                Source = meteorImage,
-                                Width = TileSize,
-                                Height = TileSize
-                            };
-                            double metLeft = col * TileSize + rnd.Next(-20, 20);
-                            double metTop = row * TileSize + rnd.Next(-20, 20);
-                            Canvas.SetLeft(meteor, metLeft);
-                            Canvas.SetTop(meteor, metTop);
-                            Panel.SetZIndex(meteor, 1);
-                            mapCanvas.Children.Add(meteor);
-
-                            Rect hitBox = new Rect(
-                                metLeft,   
-                                metTop,    
-                                TileSize,  // Largeur réelle de l'obstacle
-                                TileSize   // Hauteur réelle de l'obstacle
-                            );
-                            obstacleHitboxes.Add(hitBox);
-                        }
-
+                       
                     }
                 }
 
@@ -412,6 +393,59 @@ namespace AstroShooter
                 if (!GameCanvas.Children.Contains(mapCanvas))
                 {
                     GameCanvas.Children.Add(mapCanvas);
+                }
+
+                
+            }
+
+            for (int i = 0; i < 6; i++)
+            {
+                AddMeteor();
+            }
+        }
+
+        public void AddMeteor()
+        {
+            BitmapImage meteorImage = new BitmapImage(
+                new Uri("pack://application:,,,/asset/ground/meteor.png"));
+
+            int maxTries = 100;
+            for (int tries = 0; tries < maxTries; tries++)
+            {
+                int row = rnd.Next(3, MapSize - 3);
+                int col = rnd.Next(3, MapSize - 3);
+
+                double metLeft = col * TileSize + rnd.Next(-20, 20);
+                double metTop = row * TileSize + rnd.Next(-20, 20);
+
+                Rect newMeteorRect = new Rect(metLeft, metTop, TileSize, TileSize);
+
+                bool collision = false;
+                for (int i = 0; i < obstacleHitboxes.Count; i++)
+                {
+                    if (obstacleHitboxes[i].IntersectsWith(newMeteorRect))
+                    {
+                        collision = true;
+                        break;
+                    }
+                }
+
+                if (!collision)
+                {
+                    Image meteor = new Image
+                    {
+                        Source = meteorImage,
+                        Width = TileSize,
+                        Height = TileSize
+                    };
+
+                    Canvas.SetLeft(meteor, metLeft);
+                    Canvas.SetTop(meteor, metTop);
+                    Panel.SetZIndex(meteor, 1);
+                    mapCanvas.Children.Add(meteor);
+                    meteors.Add(meteor);
+                    obstacleHitboxes.Add(newMeteorRect);
+                    return;
                 }
             }
         }
@@ -494,7 +528,6 @@ namespace AstroShooter
                 Point position = Mouse.GetPosition(GameCanvas);
                 double pX = position.X;
                 double pY = position.Y;
-
                 Vector direction = new Vector(pX - playerCenterX, pY - playerCenterY);
                 direction.Normalize();
                 bullet = new Rectangle
@@ -533,5 +566,29 @@ namespace AstroShooter
             return false; // Voie libre
         }
 
+        private void GameCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            Point clickPos = e.GetPosition(GameCanvas);
+
+            foreach (var meteor in meteors.ToList()) // copie la liste pour éviter les problèmes de modification pendant l'itération
+            {
+                double left = Canvas.GetLeft(meteor);
+                double top = Canvas.GetTop(meteor);
+                double width = meteor.Width;
+                double height = meteor.Height;
+
+                Rect meteorRect = new Rect(left + mapOffsetX, top + mapOffsetY, width, height);
+
+                if (meteorRect.Contains(clickPos))
+                {
+                    mapCanvas.Children.Remove(meteor);
+                    meteors.Remove(meteor);
+                    obstacleHitboxes.Remove(meteorRect);
+#if DEBUG
+                    Console.WriteLine("Meteor clicked");
+#endif
+                }
+            }
+        }
     }
 }
