@@ -6,6 +6,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 
@@ -17,6 +18,9 @@ namespace AstroShooter
 
         //musique
         public static MediaPlayer music;
+
+        //pause
+        private bool isPaused = false;
 
         //Bullet management
         private List<Rectangle> bullets = new();
@@ -87,6 +91,21 @@ namespace AstroShooter
 
         }
 
+        public void ResumeGame()
+        {
+            if (!isPaused)
+            {
+                return;
+            } 
+            ScreenContainer.Children.Clear();
+            GameCanvas.Effect = null;
+            gameTime.Start();
+            isPaused = false;
+#if DEBUG
+            Console.WriteLine("ResumeGame");
+#endif
+        }
+
         private void StartGame(object sender, RoutedEventArgs e)
         {
             //bullet
@@ -111,7 +130,25 @@ namespace AstroShooter
             CompositionTarget.Rendering += GameLoop;
         }
 
+        private void AffichePauseMenu()
+        {
+            if(isPaused)
+            {
+                return;
+            }
+            isPaused = true;
+#if DEBUG
+            Console.WriteLine("AffichagePauseMenu");
+#endif
+            
+            UCPauseScreen pause = new UCPauseScreen();
+            pause.ResumeRequested += (s, e) => ResumeGame();
 
+            //UCPauseScreen.ButRules.Click += AfficheRules;
+            ScreenContainer.Children.Add(pause);
+            GameCanvas.Effect = new BlurEffect();
+            gameTime.Stop();
+        }
         private void GameLoop(object? sender, EventArgs e)
         {
 
@@ -133,6 +170,7 @@ namespace AstroShooter
             if (pressedKeys.Contains(Key.D) || pressedKeys.Contains(Key.Right))
                 deltaX -= 1;
 
+            
 
             // Appliquer le mouvement avec delta time
             if (deltaX != 0 || deltaY != 0)
@@ -378,6 +416,18 @@ namespace AstroShooter
             }
         }
 
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            pressedKeys.Add(e.Key);
+
+            if (e.Key == Key.Escape)
+            {
+                if (!isPaused)
+                    AffichePauseMenu();
+                else
+                    ResumeGame();
+            }
+        }
 
         private void CreatePlayer()
         {
@@ -420,11 +470,7 @@ namespace AstroShooter
             Canvas.SetTop(mapCanvas, mapOffsetY);
         }
 
-        private void Window_KeyDown(object sender, KeyEventArgs e)
-        {
-            pressedKeys.Add(e.Key);
 
-        }
 
         private void Window_KeyUp(object sender, KeyEventArgs e)
         {
