@@ -23,10 +23,12 @@ namespace AstroShooter
     {
         private static readonly ushort MAP_SIZE = 26;
         private static readonly ushort TILE_SIZE = 275;
-        private static readonly double MOVE_SPEED = 600;
-        private static readonly double BULLET_SPEED = 400;
+        private static readonly double MOVE_SPEED = 300;
+        private static readonly double BULLET_SPEED = 600;
         public static readonly ushort INITIAL_METEOR_COUNT = 6;
-
+        
+        private double timeSinceLastShoot = 0;
+        double shootCooldown = 0.3;
         Random rnd = new Random();
 
         private static readonly MediaPlayer music = new MediaPlayer();
@@ -40,6 +42,8 @@ namespace AstroShooter
         private bool isPlaying = false;
 
         private List<Rectangle> bullets = new();
+        private List<double> bulletWorldX = new();
+        private List<double> bulletWorldY = new();
         private List<Vector> directions = new();
 
         private List<Image> meteors = new();
@@ -91,7 +95,6 @@ namespace AstroShooter
 
         private void StartGame(object sender, RoutedEventArgs e)
         {
-            GameCanvas.KeyDown += GameCanvas_KeyDown;
             GameCanvas.Focus();
 
             gameTime.Start();
@@ -133,8 +136,6 @@ namespace AstroShooter
         // INPUT
         // =====================
 
-
-
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
             pressedKeys.Add(e.Key);
@@ -159,19 +160,6 @@ namespace AstroShooter
             pressedKeys.Remove(e.Key);
         }
 
-        private void GameCanvas_KeyDown(object sender, KeyEventArgs e)
-        {
-            if (e.Key == Key.Space)
-            {
-                ShootBullet(Mouse.GetPosition(GameCanvas));
-#if DEBUG
-                Console.WriteLine("Bullet shot!");
-#endif
-            }
-        }
-
-
-
         // =====================
         // GAME LOOP
         // =====================
@@ -183,8 +171,6 @@ namespace AstroShooter
             lastFrameTime = currentTime;
             return deltaTime;
         }
-        
-
 
         private void GameLoop(object? sender, EventArgs e)
         {
@@ -194,8 +180,21 @@ namespace AstroShooter
                 MovePlayer(deltaTime);
                 MoveBullets(deltaTime);
                 UpdateDisplay();
+                timeSinceLastShoot+= deltaTime;
+                if (pressedKeys.Contains(Key.Space))
+                {
+                    if (timeSinceLastShoot >= shootCooldown)
+                    {
+                        ShootBullet(Mouse.GetPosition(GameCanvas));
+                        timeSinceLastShoot = 0;
+                    }
+                }
             }
         }
+
+        // =====================
+        // ENEMIES
+        // =====================
 
         // =====================
         // PLAYER
@@ -210,7 +209,6 @@ namespace AstroShooter
                 Height = 40,
                 Fill = Brushes.Red
             };
-
             // Position fixe au centre de l'écran
             GameCanvas.Children.Add(player);
         }
@@ -230,15 +228,14 @@ namespace AstroShooter
             if (pressedKeys.Contains(Key.D) || pressedKeys.Contains(Key.Right))
                 deltaX -= 1;
 
-
-
             // Appliquer le mouvement avec delta time
             if (deltaX != 0 || deltaY != 0)
             {
+                //double length = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+
                 // Position actuelle du joueur sur l'écran (fixe)
                 double playerScreenX = Canvas.GetLeft(player);
                 double playerScreenY = Canvas.GetTop(player);
-
 
                 // TEST AXE X 
                 double proposedMapOffsetX = mapOffsetX + (deltaX * MOVE_SPEED * deltaTime);
@@ -254,7 +251,6 @@ namespace AstroShooter
                 {
                     mapOffsetX = proposedMapOffsetX; // Pas de collision, on valide le mouvement X
                 }
-
 
                 // TEST AXE Y
                 double proposedMapOffsetY = mapOffsetY + (deltaY * MOVE_SPEED * deltaTime);
@@ -277,16 +273,13 @@ namespace AstroShooter
         // BULLETS
         // =====================
 
-
-
-
         private void ShootBullet(Point Target)
         {
-            double playerCenterX = Canvas.GetLeft(player) + player.Width / 2;
-            double playerCenterY = Canvas.GetTop(player) + player.Height / 2;
-            Point position = Mouse.GetPosition(GameCanvas);
-            double pX = position.X;
-            double pY = position.Y;
+            double playerCenterX = Canvas.GetLeft(player) - mapOffsetX + player.Width / 2;
+            double playerCenterY = Canvas.GetTop(player) - mapOffsetY + player.Height / 2;
+            double pX = Target.X - mapOffsetX;
+            double pY = Target.Y - mapOffsetY;
+
             Vector direction = new Vector(pX - playerCenterX, pY - playerCenterY);
             direction.Normalize();
             Rectangle bullet = new Rectangle
@@ -294,18 +287,17 @@ namespace AstroShooter
                 Width = 10,
                 Height = 4,
                 Fill = Brushes.Black
-
             };
             Canvas.SetLeft(bullet, playerCenterX);
             Canvas.SetTop(bullet, playerCenterY);
             GameCanvas.Children.Add(bullet);
-
-            //Bullet angle
             double angle = Math.Atan2(direction.Y, direction.X) * 180 / Math.PI;
             bullet.RenderTransform = new RotateTransform(angle);
 
             bullets.Add(bullet);
             directions.Add(direction);
+            bulletWorldX.Add(playerCenterX);
+            bulletWorldY.Add(playerCenterY);
 #if DEBUG
             Console.WriteLine("Space pressed at Mouse X: " + pX + " Mouse Y: " + pY);
             Console.WriteLine("vector X: " + direction.X + " vector Y: " + direction.Y);
@@ -315,29 +307,43 @@ namespace AstroShooter
 
         private void MoveBullets(double deltaTime)
         {
-            // Move bullets
             for (int i = bullets.Count - 1; i >= 0; i--)
             {
+                bool bulletRemoved = false;
+
                 Rectangle bullet = bullets[i];
                 Vector direction = directions[i];
 
-                double x = Canvas.GetLeft(bullet);
-                double y = Canvas.GetTop(bullet);
+                // Avancer la balle dans le monde
+                bulletWorldX[i] += direction.X * BULLET_SPEED * deltaTime;
+                bulletWorldY[i] += direction.Y * BULLET_SPEED * deltaTime;
 
-                Canvas.SetLeft(bullet, x + direction.X * BULLET_SPEED * deltaTime);
-                Canvas.SetTop(bullet, y + direction.Y * BULLET_SPEED * deltaTime);
+                // Convertir position monde -> position écran
+                double x = bulletWorldX[i] + mapOffsetX - bullet.Width / 2;
+                double y = bulletWorldY[i] + mapOffsetY - bullet.Height / 2;
 
-                // Remove if off the screen
+                Canvas.SetLeft(bullet, x);
+                Canvas.SetTop(bullet, y);
+
+                //Rect bulletRect = new Rect(Canvas.GetLeft(bullet) - mapOffsetX,Canvas.GetTop(bullet) - mapOffsetY,bullet.Width,bullet.Height);
+
                 if (x < 0 || x > GameCanvas.ActualWidth || y < 0 || y > GameCanvas.ActualHeight)
+                {
+                   bulletRemoved = true;
+                }
+
+                if(bulletRemoved == true)
                 {
                     GameCanvas.Children.Remove(bullet);
                     bullets.RemoveAt(i);
                     directions.RemoveAt(i);
+                    bulletWorldX.RemoveAt(i);
+                    bulletWorldY.RemoveAt(i);
 #if DEBUG
                     Console.WriteLine("Children removed " + i);
-
 #endif
                 }
+
             }
         }
 
