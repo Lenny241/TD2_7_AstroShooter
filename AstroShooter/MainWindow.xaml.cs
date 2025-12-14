@@ -64,7 +64,7 @@ namespace AstroShooter
         private List<BitmapImage> animLeft = new List<BitmapImage>();
         private List<BitmapImage> animRight = new List<BitmapImage>();
 
-        private int currentFrame = 0;          // Quelle image on affiche (0, 1, 2...)
+        private int currentFrame = 0;
         private double frameTimer = 0;         // Compteur de temps
         private double timePerFrame = 0.1;     // Vitesse : change d'image toutes les 0.1 secondes
         private string currentDirection = "Down"; // Pour se souvenir de la dernière direction
@@ -242,6 +242,9 @@ namespace AstroShooter
             double deltaX = 0;
             double deltaY = 0;
 
+            // Réinitialiser isMoving à chaque frame
+            isMoving = false;
+
             // --- Gestion de l'axe Y (Haut / Bas) ---
             if (pressedKeys.Contains(Key.Z) || pressedKeys.Contains(Key.Up))
             {
@@ -256,10 +259,6 @@ namespace AstroShooter
                 isMoving = true;
             }
 
-            // --- Gestion de l'axe X (Gauche / Droite) ---
-            // Note : En mettant ces IF après, si on fait une diagonale, 
-            // l'image affichée sera celle de gauche ou droite (priorité latérale).
-
             if (pressedKeys.Contains(Key.Q) || pressedKeys.Contains(Key.Left))
             {
                 deltaX += 1;
@@ -273,10 +272,15 @@ namespace AstroShooter
                 isMoving = true;
             }
 
+
             // Appliquer le mouvement avec delta time
             if (deltaX != 0 || deltaY != 0)
             {
-                //double length = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+                double length = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                // pour éviter un déplacement plus rapide en diagonale
+                deltaX /= length;
+                deltaY /= length;
 
                 // Position actuelle du joueur sur l'écran (fixe)
                 double playerScreenX = Canvas.GetLeft(player);
@@ -645,20 +649,24 @@ namespace AstroShooter
         {
             Point clickPos = e.GetPosition(GameCanvas);
 
-            foreach (var meteor in meteors.ToList()) // copie la liste pour éviter les problèmes de modification pendant l'itération
+            foreach (var meteor in meteors.ToList())
             {
                 double left = Canvas.GetLeft(meteor);
                 double top = Canvas.GetTop(meteor);
                 double width = meteor.Width;
                 double height = meteor.Height;
 
-                Rect meteorRect = new Rect(left + mapOffsetX, top + mapOffsetY, width, height);
+                // Hitbox en coordonnées monde (comme stockée dans obstacleHitboxes)
+                Rect meteorHitbox = new Rect(left, top, width, height);
 
-                if (meteorRect.Contains(clickPos))
+                // Convertir le clic écran en coordonnées monde
+                Point clickWorld = new Point(clickPos.X - mapOffsetX, clickPos.Y - mapOffsetY);
+
+                if (meteorHitbox.Contains(clickWorld))
                 {
                     mapCanvas.Children.Remove(meteor);
                     meteors.Remove(meteor);
-                    obstacleHitboxes.Remove(meteorRect);
+                    obstacleHitboxes.Remove(meteorHitbox);
 #if DEBUG
                     Console.WriteLine("Meteor clicked");
 #endif
