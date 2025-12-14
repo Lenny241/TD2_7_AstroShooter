@@ -47,13 +47,24 @@ namespace AstroShooter
         private List<Rect> obstacleHitboxes = new();
 
         private Canvas mapCanvas = null!;
-        private Rectangle player = null!;
         private double mapOffsetX = 0;
         private double mapOffsetY = 0;
 
         private readonly HashSet<Key> pressedKeys = [];
         private readonly Stopwatch gameTime = new();
         private TimeSpan lastFrameTime;
+
+        private Image player = null!;
+        private List<BitmapImage> animUp = new List<BitmapImage>();
+        private List<BitmapImage> animDown = new List<BitmapImage>();
+        private List<BitmapImage> animLeft = new List<BitmapImage>();
+        private List<BitmapImage> animRight = new List<BitmapImage>();
+
+        private int currentFrame = 0;          // Quelle image on affiche (0, 1, 2...)
+        private double frameTimer = 0;         // Compteur de temps
+        private double timePerFrame = 0.1;     // Vitesse : change d'image toutes les 0.1 secondes
+        private string currentDirection = "Down"; // Pour se souvenir de la dernière direction
+        private bool isMoving = false;         // Pour savoir si on doit animer ou rester figé
 
         private BitmapImage meteorImage = null!;
         private BitmapImage tileImage = null!;
@@ -75,7 +86,17 @@ namespace AstroShooter
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-            meteorImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/meteor.png"));
+
+            for (int i = 1; i < 5; i++)
+            {
+                animDown.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/character/down/characterDown_{i}.png")));
+                animUp.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/character/up/characterUp_{i}.png")));
+                animLeft.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/character/left/characterLeft_{i}.png")));
+                animRight.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/character/right/characterRight_{i}.png")));
+                // Fais pareil pour Left et Right...
+            }
+
+            meteorImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/asteroide.png"));
             tileImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/classicGroundTile1.png"));
             obstacleImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/rock.png"));
             rocketImage = new BitmapImage(new Uri("pack://application:,,,/asset/character/vaisseau.png"));
@@ -189,9 +210,10 @@ namespace AstroShooter
         private void GameLoop(object? sender, EventArgs e)
         {
             double deltaTime = CalculateDeltaTime();
-            if(isPlaying == true && isPaused == false)
+            if (isPlaying && !isPaused)
             {
-                MovePlayer(deltaTime);
+                MovePlayer(deltaTime);       // Calcule la position et l'état (isMoving, Direction)
+                UpdatePlayerAnimation(deltaTime); // Met à jour l'image en fonction de l'état
                 MoveBullets(deltaTime);
                 UpdateDisplay();
             }
@@ -203,12 +225,13 @@ namespace AstroShooter
 
         private void CreatePlayer()
         {
-            // Création du personnage temporaire (cube rouge)
-            player = new Rectangle
+            // On remplace le Rectangle par une Image
+            player = new Image
             {
-                Width = 40,
-                Height = 40,
-                Fill = Brushes.Red
+                Width = 50,
+                Height = 90,
+                Source = animDown[0],
+                Stretch = Stretch.Uniform // Pour garder les proportions
             };
 
             // Position fixe au centre de l'écran
@@ -221,14 +244,36 @@ namespace AstroShooter
             double deltaX = 0;
             double deltaY = 0;
 
+            // --- Gestion de l'axe Y (Haut / Bas) ---
             if (pressedKeys.Contains(Key.Z) || pressedKeys.Contains(Key.Up))
+            {
                 deltaY += 1;
+                currentDirection = "Up";
+                isMoving = true;
+            }
             if (pressedKeys.Contains(Key.S) || pressedKeys.Contains(Key.Down))
+            {
                 deltaY -= 1;
+                currentDirection = "Down";
+                isMoving = true;
+            }
+
+            // --- Gestion de l'axe X (Gauche / Droite) ---
+            // Note : En mettant ces IF après, si on fait une diagonale, 
+            // l'image affichée sera celle de gauche ou droite (priorité latérale).
+
             if (pressedKeys.Contains(Key.Q) || pressedKeys.Contains(Key.Left))
+            {
                 deltaX += 1;
+                currentDirection = "Left";
+                isMoving = true;
+            }
             if (pressedKeys.Contains(Key.D) || pressedKeys.Contains(Key.Right))
+            {
                 deltaX -= 1;
+                currentDirection = "Right";
+                isMoving = true;
+            }
 
 
 
@@ -269,6 +314,51 @@ namespace AstroShooter
                 {
                     mapOffsetY = proposedMapOffsetY; // Pas de collision, on valide le mouvement Y
                 }
+            }
+        }
+
+        // =====================
+        // PLAYER ANIMATION
+        // =====================
+
+        private void UpdatePlayerAnimation(double deltaTime)
+        {
+            if (isMoving)
+            {
+                frameTimer += deltaTime;
+
+                // Est-ce qu'il est temps de changer d'image ?
+                if (frameTimer >= timePerFrame)
+                {
+                    frameTimer = 0;
+                    currentFrame++; // Image suivante
+                }
+            }
+            else
+            {
+                // Si on ne bouge pas, on reste sur la première image (position statique)
+                currentFrame = 0;
+                frameTimer = 0;
+            }
+
+            // --- APPLICATION DE L'IMAGE ---
+
+            // On sélectionne la bonne liste selon la direction
+            List<BitmapImage> currentAnimList = animDown; // Par défaut
+
+            switch (currentDirection)
+            {
+                case "Up": currentAnimList = animUp; break;
+                case "Down": currentAnimList = animDown; break;
+                case "Left": currentAnimList = animLeft; break;
+                case "Right": currentAnimList = animRight; break;
+            }
+
+            // Sécurité : on s'assure que currentFrame ne dépasse pas la taille de la liste (Modulo)
+            if (currentAnimList.Count > 0)
+            {
+                int indexReel = currentFrame % currentAnimList.Count;
+                player.Source = currentAnimList[indexReel];
             }
         }
 
@@ -445,7 +535,7 @@ namespace AstroShooter
                     if (estCentre)
                     {
                         int centerRow = MAP_SIZE / 2;
-                        int centerCol = MAP_SIZE / 2;
+                        int centerCol = MAP_SIZE / 2 + 1;
                         Image rocket = new Image
                         {
                             Source = rocketImage,
@@ -458,6 +548,14 @@ namespace AstroShooter
                         Canvas.SetTop(rocket, rocketTop);
                         Panel.SetZIndex(rocket, 1);
                         mapCanvas.Children.Add(rocket);
+
+                        Rect hitBox = new Rect(
+                            rocketLeft,   // Marge à gauche
+                            rocketTop,    // Marge en haut (le rocher est haut visuellement)
+                            TILE_SIZE,  // Largeur réelle de l'obstacle
+                            TILE_SIZE  // Hauteur réelle de l'obstacle
+                        );
+                        obstacleHitboxes.Add(hitBox);
 
                     }
 
