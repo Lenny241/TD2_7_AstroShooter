@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Converters;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
@@ -16,11 +17,18 @@ using System.Windows.Shapes;
 namespace AstroShooter
 {
 
+    
+
     public partial class MainWindow : Window
     {
+        private static readonly ushort MAP_SIZE = 26;
+        private static readonly ushort TILE_SIZE = 275;
+        private static readonly double MOVE_SPEED = 600;
+        private static readonly double BULLET_SPEED = 400;
+        public static readonly ushort INITIAL_METEOR_COUNT = 6;
+
         Random rnd = new Random();
 
-        //musique
         private static readonly MediaPlayer music = new MediaPlayer();
         public static void PlayMusic() => music.Play();
         public static void StopMusic() => music.Stop();
@@ -28,38 +36,25 @@ namespace AstroShooter
         public static void SetMusicVolume(double volume) => music.Volume = volume;
         public static double GetMusicVolume() => music.Volume;
 
-        //pause
         private bool isPaused = false;
+        private bool isPlaying = false;
 
-        //Bullet management
         private List<Rectangle> bullets = new();
         private List<Vector> directions = new();
-        private const double bulletSpeed = 400;
-        public Rectangle bullet = null!;
 
-        //Meteo management
         private List<Image> meteors = new();
 
-        //Map management
-        private const int MapSize = 26;
-        private const int TileSize = 275;
-        private const double MoveSpeed = 600;
         private List<Rect> obstacleHitboxes = new();
 
-        //Player management
         private Canvas mapCanvas = null!;
         private Rectangle player = null!;
         private double mapOffsetX = 0;
         private double mapOffsetY = 0;
 
-        // Système de mouvement fluide basé sur le temps
         private readonly HashSet<Key> pressedKeys = [];
         private readonly Stopwatch gameTime = new();
         private TimeSpan lastFrameTime;
 
-        private bool isPlaying = false;
-
-        //image
         private BitmapImage meteorImage = null!;
         private BitmapImage tileImage = null!;
         private BitmapImage obstacleImage = null!;
@@ -74,8 +69,8 @@ namespace AstroShooter
         {
             InitializeComponent();
             Loaded += MainWindow_Loaded;
-            AfficheDemarrage();
-            DemarrageMusique();
+            ShowStartScreen();
+            StartMusic();
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -87,28 +82,19 @@ namespace AstroShooter
 
             GameCanvas.Focus();
             GenerateMap();
+            CreatePlayer();
+            CenterMapOnPlayer();
             lastFrameTime = gameTime.Elapsed;
             CompositionTarget.Rendering += GameLoop;
             GameCanvas.MouseLeftButtonDown += GameCanvas_MouseLeftButtonDown;
         }
-        public void AfficheDemarrage()
-        {
-            ScreenContainer.Children.Clear();
-            UCMenu UCMenu = new UCMenu();
-            ScreenContainer.Children.Add(UCMenu);
-            UCMenu.ButStart.Click += StartGame;
-            UCMenu.ButRules.Click += AfficheRules;
-        }
 
         private void StartGame(object sender, RoutedEventArgs e)
         {
-            //bullet
             GameCanvas.KeyDown += GameCanvas_KeyDown;
             GameCanvas.Focus();
 
             gameTime.Start();
-            CreatePlayer();
-            CenterMapOnPlayer();
 #if DEBUG
             Console.WriteLine("StartGame");
 #endif
@@ -129,6 +115,7 @@ namespace AstroShooter
             GameCanvas.Effect = null;
             gameTime.Start();
             isPaused = false;
+            music.Play();
 #if DEBUG
             Console.WriteLine("ResumeGame");
 #endif
@@ -159,7 +146,7 @@ namespace AstroShooter
             {
                 if (!isPaused)
                 {
-                    AffichePauseMenu();
+                    ShowPauseMenu();
                 }
                 else
                 {
@@ -196,6 +183,38 @@ namespace AstroShooter
             lastFrameTime = currentTime;
             return deltaTime;
         }
+        
+
+
+        private void GameLoop(object? sender, EventArgs e)
+        {
+            double deltaTime = CalculateDeltaTime();
+            if(isPlaying == true && isPaused == false)
+            {
+                MovePlayer(deltaTime);
+                MoveBullets(deltaTime);
+                UpdateDisplay();
+            }
+        }
+
+        // =====================
+        // PLAYER
+        // =====================
+
+        private void CreatePlayer()
+        {
+            // Création du personnage temporaire (cube rouge)
+            player = new Rectangle
+            {
+                Width = 40,
+                Height = 40,
+                Fill = Brushes.Red
+            };
+
+            // Position fixe au centre de l'écran
+            GameCanvas.Children.Add(player);
+        }
+
         private void MovePlayer(double deltaTime)
         {
             // Calculer le mouvement basé sur les touches pressées
@@ -222,7 +241,7 @@ namespace AstroShooter
 
 
                 // TEST AXE X 
-                double proposedMapOffsetX = mapOffsetX + (deltaX * MoveSpeed * deltaTime);
+                double proposedMapOffsetX = mapOffsetX + (deltaX * MOVE_SPEED * deltaTime);
 
                 // Calcul de la position du joueur DANS LE MONDE
                 // Formule : PositionJoueurMonde = PositionJoueurEcran - PositionCarteEcran
@@ -238,7 +257,7 @@ namespace AstroShooter
 
 
                 // TEST AXE Y
-                double proposedMapOffsetY = mapOffsetY + (deltaY * MoveSpeed * deltaTime);
+                double proposedMapOffsetY = mapOffsetY + (deltaY * MOVE_SPEED * deltaTime);
 
                 // On recalcule avec la potentielle nouvelle position X validée juste avant
                 double playerWorldX_Current = playerScreenX - mapOffsetX;
@@ -251,39 +270,6 @@ namespace AstroShooter
                     mapOffsetY = proposedMapOffsetY; // Pas de collision, on valide le mouvement Y
                 }
             }
-        }
-
-
-        private void GameLoop(object? sender, EventArgs e)
-        {
-            double deltaTime = CalculateDeltaTime();
-            if(isPlaying == true && isPaused == false)
-            {
-                MovePlayer(deltaTime);
-                MoveBullets(deltaTime);
-                UpdateDisplay();
-            }
-        }
-
-
-
-
-        // =====================
-        // PLAYER
-        // =====================
-
-        private void CreatePlayer()
-        {
-            // Création du personnage temporaire (cube rouge)
-            player = new Rectangle
-            {
-                Width = 40,
-                Height = 40,
-                Fill = Brushes.Red
-            };
-
-            // Position fixe au centre de l'écran
-            GameCanvas.Children.Add(player);
         }
 
 
@@ -303,7 +289,7 @@ namespace AstroShooter
             double pY = position.Y;
             Vector direction = new Vector(pX - playerCenterX, pY - playerCenterY);
             direction.Normalize();
-            bullet = new Rectangle
+            Rectangle bullet = new Rectangle
             {
                 Width = 10,
                 Height = 4,
@@ -338,8 +324,8 @@ namespace AstroShooter
                 double x = Canvas.GetLeft(bullet);
                 double y = Canvas.GetTop(bullet);
 
-                Canvas.SetLeft(bullet, x + direction.X * bulletSpeed * deltaTime);
-                Canvas.SetTop(bullet, y + direction.Y * bulletSpeed * deltaTime);
+                Canvas.SetLeft(bullet, x + direction.X * BULLET_SPEED * deltaTime);
+                Canvas.SetTop(bullet, y + direction.Y * BULLET_SPEED * deltaTime);
 
                 // Remove if off the screen
                 if (x < 0 || x > GameCanvas.ActualWidth || y < 0 || y > GameCanvas.ActualHeight)
@@ -379,8 +365,13 @@ namespace AstroShooter
             double centerY = (GameCanvas.ActualHeight - player.Height) / 2;
 
             // Position initiale du joueur au centre de la map
-            mapOffsetX = centerX - (MapSize * TileSize / 2.0) + (player.Width / 2);
-            mapOffsetY = centerY - (MapSize * TileSize / 2.0) + (player.Height / 2);
+            mapOffsetX = centerX - (MAP_SIZE * TILE_SIZE / 2.0) + (player.Width / 2);
+            mapOffsetY = centerY - (MAP_SIZE * TILE_SIZE / 2.0) + (player.Height / 2);
+
+            Canvas.SetLeft(player, centerX);
+            Canvas.SetTop(player, centerY);
+            Canvas.SetLeft(mapCanvas, mapOffsetX);
+            Canvas.SetTop(mapCanvas, mapOffsetY);
         }
 
         private void UpdateDisplay()
@@ -409,60 +400,60 @@ namespace AstroShooter
             mapCanvas.Children.Clear();
 
             // Initialisation des outils
-            Image[,] tileGrid = new Image[MapSize, MapSize];
+            Image[,] tileGrid = new Image[MAP_SIZE, MAP_SIZE];
 
             // Chargement des images (UNE SEULE FOIS pour la performance)
 
 
 
             // Création des tuiles de sol
-            for (int row = 0; row < MapSize; row++)
+            for (int row = 0; row < MAP_SIZE; row++)
             {
-                for (int col = 0; col < MapSize; col++)
+                for (int col = 0; col < MAP_SIZE; col++)
                 {
                     Image tile = new Image
                     {
                         Source = tileImage,
-                        Width = TileSize + 1,
-                        Height = TileSize + 1
+                        Width = TILE_SIZE + 1,
+                        Height = TILE_SIZE + 1
                     };
                     tileGrid[row, col] = tile;
                 }
             }
 
             // Affichage du sol ET ajout des obstacles
-            for (int row = 0; row < MapSize; row++)
+            for (int row = 0; row < MAP_SIZE; row++)
             {
-                for (int col = 0; col < MapSize; col++)
+                for (int col = 0; col < MAP_SIZE; col++)
                 {
 
                     Image tile = tileGrid[row, col];
-                    Canvas.SetLeft(tile, col * TileSize);
-                    Canvas.SetTop(tile, row * TileSize);
+                    Canvas.SetLeft(tile, col * TILE_SIZE);
+                    Canvas.SetTop(tile, row * TILE_SIZE);
                     Panel.SetZIndex(tile, 0); // Le sol est en bas (Couche 0)
                     mapCanvas.Children.Add(tile);
 
                     // bordure de la carte en 3 tuiles de large
                     bool estBordure = (row == 0 || col == 0 || row == 1 || col == 1 || row == 2 || col == 2 ||
-                                       row == MapSize - 1 || col == MapSize - 1 || row == MapSize - 2 || col == MapSize - 2 || row == MapSize - 3 || col == MapSize - 3);
+                                       row == MAP_SIZE - 1 || col == MAP_SIZE - 1 || row == MAP_SIZE - 2 || col == MAP_SIZE - 2 || row == MAP_SIZE - 3 || col == MAP_SIZE - 3);
 
                     // centre de la carte en dimension 3x3
-                    bool estCentre = (row >= (MapSize / 2 - 1) && row <= (MapSize / 2 + 1) &&
-                                      col >= (MapSize / 2 - 1) && col <= (MapSize / 2 + 1));
+                    bool estCentre = (row >= (MAP_SIZE / 2 - 1) && row <= (MAP_SIZE / 2 + 1) &&
+                                      col >= (MAP_SIZE / 2 - 1) && col <= (MAP_SIZE / 2 + 1));
 
                     // positionnement d'une seul fusé au centre de la carte
                     if (estCentre)
                     {
-                        int centerRow = MapSize / 2;
-                        int centerCol = MapSize / 2;
+                        int centerRow = MAP_SIZE / 2;
+                        int centerCol = MAP_SIZE / 2;
                         Image rocket = new Image
                         {
                             Source = rocketImage,
-                            Width = TileSize,
-                            Height = TileSize
+                            Width = TILE_SIZE,
+                            Height = TILE_SIZE
                         };
-                        double rocketLeft = centerCol * TileSize;
-                        double rocketTop = centerRow * TileSize;
+                        double rocketLeft = centerCol * TILE_SIZE;
+                        double rocketTop = centerRow * TILE_SIZE;
                         Canvas.SetLeft(rocket, rocketLeft);
                         Canvas.SetTop(rocket, rocketTop);
                         Panel.SetZIndex(rocket, 1);
@@ -497,12 +488,12 @@ namespace AstroShooter
                         {
                             Source = obstacleImage,
                             // On garde vos dimensions visuelles
-                            Width = TileSize + 25,
-                            Height = TileSize + 75
+                            Width = TILE_SIZE + 25,
+                            Height = TILE_SIZE + 75
                         };
 
-                        double obsLeft = col * TileSize - 15;
-                        double obsTop = row * TileSize - 60;
+                        double obsLeft = col * TILE_SIZE - 15;
+                        double obsTop = row * TILE_SIZE - 60;
 
                         Canvas.SetLeft(obstacle, obsLeft);
                         Canvas.SetTop(obstacle, obsTop);
@@ -513,8 +504,8 @@ namespace AstroShooter
                         Rect hitBox = new Rect(
                             obsLeft + 40,   // Marge à gauche
                             obsTop + 80,    // Marge en haut (le rocher est haut visuellement)
-                            TileSize - 10,  // Largeur réelle de l'obstacle
-                            TileSize - 10   // Hauteur réelle de l'obstacle
+                            TILE_SIZE - 10,  // Largeur réelle de l'obstacle
+                            TILE_SIZE - 10   // Hauteur réelle de l'obstacle
                         );
                         obstacleHitboxes.Add(hitBox);
                     }
@@ -540,7 +531,7 @@ namespace AstroShooter
 
             }
 
-            for (int i = 0; i < 6; i++)
+            for (int i = 0; i < INITIAL_METEOR_COUNT; i++)
             {
                 AddMeteor();
             }
@@ -578,13 +569,13 @@ namespace AstroShooter
             int maxTries = 100;
             for (int tries = 0; tries < maxTries; tries++)
             {
-                int row = rnd.Next(3, MapSize - 3);
-                int col = rnd.Next(3, MapSize - 3);
+                int row = rnd.Next(3, MAP_SIZE - 3);
+                int col = rnd.Next(3, MAP_SIZE - 3);
 
-                double metLeft = col * TileSize + rnd.Next(-20, 20);
-                double metTop = row * TileSize + rnd.Next(-20, 20);
+                double metLeft = col * TILE_SIZE + rnd.Next(-20, 20);
+                double metTop = row * TILE_SIZE + rnd.Next(-20, 20);
 
-                Rect newMeteorRect = new Rect(metLeft, metTop, TileSize, TileSize);
+                Rect newMeteorRect = new Rect(metLeft, metTop, TILE_SIZE, TILE_SIZE);
 
                 bool collision = false;
                 for (int i = 0; i < obstacleHitboxes.Count; i++)
@@ -601,8 +592,8 @@ namespace AstroShooter
                     Image meteor = new Image
                     {
                         Source = meteorImage,
-                        Width = TileSize,
-                        Height = TileSize
+                        Width = TILE_SIZE,
+                        Height = TILE_SIZE
                     };
 
                     Canvas.SetLeft(meteor, metLeft);
@@ -620,35 +611,63 @@ namespace AstroShooter
         // UI / MENUS
         // =====================
 
-
-        public void AfficheRules(object sender, RoutedEventArgs e)
+        public void ShowStartScreen()
         {
-#if DEBUG
-            Console.WriteLine("AffichageRules");
-#endif
+            ScreenContainer.Children.Clear();
+            UCMenu menu = new UCMenu();
+            ScreenContainer.Children.Add(menu);
+            menu.ButStart.Click += StartGame;
+            menu.ButRules.Click += ShowRules;
+        }
+        public void ShowRules(object sender, RoutedEventArgs e)
+        {
             UCRules uCRules = new UCRules();
             ScreenContainer.Children.Add(uCRules);
-
+#if DEBUG
+            Console.WriteLine("show rules");
+#endif
         }
 
-        private void AffichePauseMenu()
+        private void ShowPauseMenu()
         {
             if (isPaused)
             {
                 return;
             }
             isPaused = true;
-#if DEBUG
-            Console.WriteLine("AffichagePauseMenu");
-#endif
+            ShowPauseScreenUI();
+        }
 
+        private void ShowPauseScreenUI()
+        {
+            music.Pause();
+            gameTime.Stop();
+            GameCanvas.Effect = new BlurEffect();
             UCPauseScreen pause = new UCPauseScreen();
             pause.ResumeRequested += (s, e) => ResumeGame();
-
-            //UCPauseScreen.ButRules.Click += AfficheRules;
+            pause.QuitRequested += (s, e) => Quit();
             ScreenContainer.Children.Add(pause);
-            GameCanvas.Effect = new BlurEffect();
+            pause.ButRules.Click += ShowRules;
+#if DEBUG
+            Console.WriteLine("Show pause screen");
+#endif
+        }
+
+        private void Quit()
+        {
+            isPlaying = false;
+            isPaused = false;
             gameTime.Stop();
+            GameCanvas.Children.Clear();
+            bullets.Clear();
+            directions.Clear();
+            obstacleHitboxes.Clear();
+            GenerateMap();
+            CreatePlayer();
+            CenterMapOnPlayer();
+            ShowStartScreen();
+            music.Stop();
+            music.Play();
         }
 
 
@@ -657,10 +676,10 @@ namespace AstroShooter
         // AUDIO
         // =====================
 
-        public void DemarrageMusique()
+        public void StartMusic()
         {
 #if DEBUG
-            Console.WriteLine("Lancement musique");
+            Console.WriteLine("Start music");
 #endif
             music.Open(new Uri(AppDomain.CurrentDomain.BaseDirectory + "asset/sons/music.mp3"));
             music.Volume = 0.5;

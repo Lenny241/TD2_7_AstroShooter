@@ -35,11 +35,11 @@ namespace AstroShooter
             bool ? rep = volume.DialogResult;
             if (rep == true)
             {
-                double musicVolume = volume.slidVolume.Value;
+                double musicVolume = (volume.slidVolume.Value/10);
 #if DEBUG
-                Console.WriteLine("Volume" + musicVolume);
+                Console.WriteLine("Volume set to " + musicVolume);
 #endif
-                MainWindow.SetMusicVolume(musicVolume / 10);
+                MainWindow.SetMusicVolume(musicVolume);
             }
 #if DEBUG
             Console.WriteLine("AffichageVolu");

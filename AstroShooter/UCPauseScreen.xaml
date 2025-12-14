@@ -26,7 +26,7 @@
                 </LinearGradientBrush>
             </Button.Background>
         </Button>
-        <Button x:Name="ButQuit" Content="Quit" HorizontalAlignment="Left" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Top" BorderBrush="Black" Foreground="White" Margin="636,544,0,0">
+        <Button x:Name="ButQuit" Content="Quit" HorizontalAlignment="Left" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Top" BorderBrush="Black" Foreground="White" Margin="636,544,0,0" Click="ButQuit_Click">
             <Button.Background>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                     <GradientStop Color="Black"/>
@@ -34,7 +34,7 @@
                 </LinearGradientBrush>
             </Button.Background>
         </Button>
-        <Button x:Name="ButRules" Content="Rules" HorizontalAlignment="Center" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Top" BorderBrush="Black" Foreground="White" Margin="0,457,0,0" Click="ButRules_Click">
+        <Button x:Name="ButRules" Content="Rules" HorizontalAlignment="Center" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Top" BorderBrush="Black" Foreground="White" Margin="0,457,0,0">
             <Button.Background>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                     <GradientStop Color="Black"/>

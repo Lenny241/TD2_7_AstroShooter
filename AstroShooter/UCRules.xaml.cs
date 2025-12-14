@@ -32,7 +32,7 @@ namespace AstroShooter
 
             // Récupérer la fenêtre parente
             if (Window.GetWindow(this) is MainWindow main)
-                main.AfficheDemarrage();
+                main.ShowStartScreen();
         }
     }
 }

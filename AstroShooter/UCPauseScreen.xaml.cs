@@ -37,7 +37,7 @@ namespace AstroShooter
             {
                 double musicVolume = volume.slidVolume.Value;
 #if DEBUG
-              Console.WriteLine("Volume" + musicVolume);
+                Console.WriteLine("Volume" + musicVolume);
 #endif
                 MainWindow.SetMusicVolume(musicVolume / 10);
             }
@@ -47,18 +47,22 @@ namespace AstroShooter
         }
 
         public event EventHandler ResumeRequested;
-
         private void ButResume_Click(object sender, RoutedEventArgs e)
         {
 #if DEBUG
-            Console.WriteLine("ResumeClicked");
+            Console.WriteLine("ResumeRequested");
 #endif
             ResumeRequested?.Invoke(this, EventArgs.Empty);
         }
 
-        private void ButRules_Click(object sender, RoutedEventArgs e)
-        {
+        public event EventHandler QuitRequested;
 
+        private void ButQuit_Click(object sender, RoutedEventArgs e)
+        {
+#if DEBUG
+            Console.WriteLine("QuitRequested");
+#endif
+            QuitRequested?.Invoke(this, EventArgs.Empty);
         }
     }
 }
