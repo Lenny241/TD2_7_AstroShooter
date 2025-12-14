@@ -29,6 +29,8 @@ namespace AstroShooter
         {
             Volume volume = new Volume();
             volume.Owner = Window.GetWindow(this);
+            volume.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+
             volume.ShowDialog();
             bool ? rep = volume.DialogResult;
             if (rep == true)
@@ -37,7 +39,7 @@ namespace AstroShooter
 #if DEBUG
                 Console.WriteLine("Volume" + musicVolume);
 #endif
-                MainWindow.music.Volume = musicVolume / 10;
+                MainWindow.SetMusicVolume(musicVolume / 10);
             }
 #if DEBUG
             Console.WriteLine("AffichageVolu");

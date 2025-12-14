@@ -21,7 +21,12 @@ namespace AstroShooter
         Random rnd = new Random();
 
         //musique
-        public static MediaPlayer music;
+        private static readonly MediaPlayer music = new MediaPlayer();
+        public static void PlayMusic() => music.Play();
+        public static void StopMusic() => music.Stop();
+        public static void PauseMusic() => music.Pause();
+        public static void SetMusicVolume(double volume) => music.Volume = volume;
+        public static double GetMusicVolume() => music.Volume;
 
         //pause
         private bool isPaused = false;
@@ -52,13 +57,39 @@ namespace AstroShooter
         private readonly Stopwatch gameTime = new();
         private TimeSpan lastFrameTime;
 
+        private bool isPlaying = false;
+
+        //image
+        private BitmapImage meteorImage = null!;
+        private BitmapImage tileImage = null!;
+        private BitmapImage obstacleImage = null!;
+        private BitmapImage obstacleTileImage= null!;
+        private BitmapImage rocketImage = null!;
+
+        // =====================
+        // GAME STATE
+        // =====================
+
         public MainWindow()
         {
             InitializeComponent();
             Loaded += MainWindow_Loaded;
             AfficheDemarrage();
             DemarrageMusique();
- 
+        }
+
+        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        {
+            meteorImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/meteor.png"));
+            tileImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/classicGroundTile1.png"));
+            obstacleImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/rock.png"));
+            rocketImage = new BitmapImage(new Uri("pack://application:,,,/asset/character/vaisseau.png"));
+
+            GameCanvas.Focus();
+            GenerateMap();
+            lastFrameTime = gameTime.Elapsed;
+            CompositionTarget.Rendering += GameLoop;
+            GameCanvas.MouseLeftButtonDown += GameCanvas_MouseLeftButtonDown;
         }
         public void AfficheDemarrage()
         {
@@ -67,50 +98,6 @@ namespace AstroShooter
             ScreenContainer.Children.Add(UCMenu);
             UCMenu.ButStart.Click += StartGame;
             UCMenu.ButRules.Click += AfficheRules;
-        }
-
-        
-
-        public void DemarrageMusique()
-        {
-#if DEBUG
-            Console.WriteLine("Lancement musique");
-#endif
-            music=new MediaPlayer();
-            music.Open(new Uri(AppDomain.CurrentDomain.BaseDirectory+"asset/sons/music.mp3"));
-            music.Volume = 0.5; // Volume initial
-            music.MediaEnded += RelanceMusique;
-            music.Play();
-        }
-
-        private void RelanceMusique(object? sender, EventArgs e)
-        {
-            music.Position = TimeSpan.Zero;
-            music.Play();
-        }
-        public void AfficheRules(object sender, RoutedEventArgs e)
-        {
-#if DEBUG
-            Console.WriteLine("AffichageRules");
-#endif
-            UCRules uCRules = new UCRules();
-            ScreenContainer.Children.Add(uCRules);
-
-        }
-
-        public void ResumeGame()
-        {
-            if (!isPaused)
-            {
-                return;
-            } 
-            ScreenContainer.Children.Clear();
-            GameCanvas.Effect = null;
-            gameTime.Start();
-            isPaused = false;
-#if DEBUG
-            Console.WriteLine("ResumeGame");
-#endif
         }
 
         private void StartGame(object sender, RoutedEventArgs e)
@@ -127,44 +114,90 @@ namespace AstroShooter
 #endif
             ScreenContainer.Children.Clear();
             GameCanvas.Effect = null;
+
+            isPlaying = true;
+            isPaused = false;
         }
 
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+        public void ResumeGame()
         {
-            GameCanvas.Focus();
-            GenerateMap();
-            lastFrameTime = gameTime.Elapsed;
-            CompositionTarget.Rendering += GameLoop;
-            GameCanvas.MouseLeftButtonDown += GameCanvas_MouseLeftButtonDown;
-        }
-
-        private void AffichePauseMenu()
-        {
-            if(isPaused)
+            if (!isPaused)
             {
                 return;
             }
-            isPaused = true;
+            ScreenContainer.Children.Clear();
+            GameCanvas.Effect = null;
+            gameTime.Start();
+            isPaused = false;
 #if DEBUG
-            Console.WriteLine("AffichagePauseMenu");
+            Console.WriteLine("ResumeGame");
 #endif
-            
-            UCPauseScreen pause = new UCPauseScreen();
-            pause.ResumeRequested += (s, e) => ResumeGame();
-
-            //UCPauseScreen.ButRules.Click += AfficheRules;
-            ScreenContainer.Children.Add(pause);
-            GameCanvas.Effect = new BlurEffect();
-            gameTime.Stop();
         }
-        private void GameLoop(object? sender, EventArgs e)
-        {
 
+        protected override void OnClosed(EventArgs e)
+        {
+            // Arrêter la boucle de jeu proprement
+            CompositionTarget.Rendering -= GameLoop;
+            gameTime.Stop();
+            base.OnClosed(e);
+        }
+
+        // =====================
+        // INPUT
+        // =====================
+
+
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            pressedKeys.Add(e.Key);
+            if (isPlaying == false)
+            {
+                return;
+            }
+            if (e.Key == Key.Escape)
+            {
+                if (!isPaused)
+                {
+                    AffichePauseMenu();
+                }
+                else
+                {
+                    ResumeGame();
+                }
+            }
+        }
+        private void Window_KeyUp(object sender, KeyEventArgs e)
+        {
+            pressedKeys.Remove(e.Key);
+        }
+
+        private void GameCanvas_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Space)
+            {
+                ShootBullet(Mouse.GetPosition(GameCanvas));
+#if DEBUG
+                Console.WriteLine("Bullet shot!");
+#endif
+            }
+        }
+
+
+
+        // =====================
+        // GAME LOOP
+        // =====================
+        private double CalculateDeltaTime()
+        {
             // Calculer le delta time pour un mouvement indépendant du framerate
             TimeSpan currentTime = gameTime.Elapsed;
             double deltaTime = (currentTime - lastFrameTime).TotalSeconds;
             lastFrameTime = currentTime;
-
+            return deltaTime;
+        }
+        private void MovePlayer(double deltaTime)
+        {
             // Calculer le mouvement basé sur les touches pressées
             double deltaX = 0;
             double deltaY = 0;
@@ -178,7 +211,7 @@ namespace AstroShooter
             if (pressedKeys.Contains(Key.D) || pressedKeys.Contains(Key.Right))
                 deltaX -= 1;
 
-            
+
 
             // Appliquer le mouvement avec delta time
             if (deltaX != 0 || deltaY != 0)
@@ -217,10 +250,85 @@ namespace AstroShooter
                 {
                     mapOffsetY = proposedMapOffsetY; // Pas de collision, on valide le mouvement Y
                 }
-
-                UpdatePositions();
             }
+        }
 
+
+        private void GameLoop(object? sender, EventArgs e)
+        {
+            double deltaTime = CalculateDeltaTime();
+            if(isPlaying == true && isPaused == false)
+            {
+                MovePlayer(deltaTime);
+                MoveBullets(deltaTime);
+                UpdateDisplay();
+            }
+        }
+
+
+
+
+        // =====================
+        // PLAYER
+        // =====================
+
+        private void CreatePlayer()
+        {
+            // Création du personnage temporaire (cube rouge)
+            player = new Rectangle
+            {
+                Width = 40,
+                Height = 40,
+                Fill = Brushes.Red
+            };
+
+            // Position fixe au centre de l'écran
+            GameCanvas.Children.Add(player);
+        }
+
+
+        // =====================
+        // BULLETS
+        // =====================
+
+
+
+
+        private void ShootBullet(Point Target)
+        {
+            double playerCenterX = Canvas.GetLeft(player) + player.Width / 2;
+            double playerCenterY = Canvas.GetTop(player) + player.Height / 2;
+            Point position = Mouse.GetPosition(GameCanvas);
+            double pX = position.X;
+            double pY = position.Y;
+            Vector direction = new Vector(pX - playerCenterX, pY - playerCenterY);
+            direction.Normalize();
+            bullet = new Rectangle
+            {
+                Width = 10,
+                Height = 4,
+                Fill = Brushes.Black
+
+            };
+            Canvas.SetLeft(bullet, playerCenterX);
+            Canvas.SetTop(bullet, playerCenterY);
+            GameCanvas.Children.Add(bullet);
+
+            //Bullet angle
+            double angle = Math.Atan2(direction.Y, direction.X) * 180 / Math.PI;
+            bullet.RenderTransform = new RotateTransform(angle);
+
+            bullets.Add(bullet);
+            directions.Add(direction);
+#if DEBUG
+            Console.WriteLine("Space pressed at Mouse X: " + pX + " Mouse Y: " + pY);
+            Console.WriteLine("vector X: " + direction.X + " vector Y: " + direction.Y);
+            Console.WriteLine("Angle: " + angle);
+#endif
+        }
+
+        private void MoveBullets(double deltaTime)
+        {
             // Move bullets
             for (int i = bullets.Count - 1; i >= 0; i--)
             {
@@ -247,6 +355,48 @@ namespace AstroShooter
             }
         }
 
+
+        // =====================
+        // MAP & COLLISIONS
+        // =====================
+
+        private bool CheckCollision(Rect playerRect)
+        {
+            foreach (Rect obstacle in obstacleHitboxes)
+            {
+                if (playerRect.IntersectsWith(obstacle))
+                {
+                    return true; // Collision détectée !
+                }
+            }
+            return false; // Voie libre
+        }
+
+        private void CenterMapOnPlayer()
+        {
+            // Calcule l'offset pour centrer la map sur le joueur (basé sur le viewport)
+            double centerX = (GameCanvas.ActualWidth - player.Width) / 2;
+            double centerY = (GameCanvas.ActualHeight - player.Height) / 2;
+
+            // Position initiale du joueur au centre de la map
+            mapOffsetX = centerX - (MapSize * TileSize / 2.0) + (player.Width / 2);
+            mapOffsetY = centerY - (MapSize * TileSize / 2.0) + (player.Height / 2);
+        }
+
+        private void UpdateDisplay()
+        {
+            // Le joueur reste toujours au centre du viewport
+            double centerX = (GameCanvas.ActualWidth - player.Width) / 2;
+            double centerY = (GameCanvas.ActualHeight - player.Height) / 2;
+
+            Canvas.SetLeft(player, centerX);
+            Canvas.SetTop(player, centerY);
+
+            // La map se déplace pour créer l'illusion de mouvement
+            Canvas.SetLeft(mapCanvas, mapOffsetX);
+            Canvas.SetTop(mapCanvas, mapOffsetY);
+        }
+
         private void GenerateMap()
         {
             // Initialisation du Canvas
@@ -262,15 +412,7 @@ namespace AstroShooter
             Image[,] tileGrid = new Image[MapSize, MapSize];
 
             // Chargement des images (UNE SEULE FOIS pour la performance)
-            BitmapImage tileImage = new BitmapImage(
-                new Uri("pack://application:,,,/asset/ground/classicGroundTile1.png"));
 
-            BitmapImage obstacleImage = new BitmapImage(
-                new Uri("pack://application:,,,/asset/ground/rock.png"));
-
-
-            BitmapImage rocketImage = new BitmapImage(
-                new Uri("pack://application:,,,/asset/character/vaisseau.png"));
 
 
             // Création des tuiles de sol
@@ -385,7 +527,7 @@ namespace AstroShooter
                     }
                     else
                     {
-                       
+
                     }
                 }
 
@@ -395,7 +537,7 @@ namespace AstroShooter
                     GameCanvas.Children.Add(mapCanvas);
                 }
 
-                
+
             }
 
             for (int i = 0; i < 6; i++)
@@ -404,10 +546,34 @@ namespace AstroShooter
             }
         }
 
+        private void GameCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            Point clickPos = e.GetPosition(GameCanvas);
+
+            foreach (var meteor in meteors.ToList()) // copie la liste pour éviter les problèmes de modification pendant l'itération
+            {
+                double left = Canvas.GetLeft(meteor);
+                double top = Canvas.GetTop(meteor);
+                double width = meteor.Width;
+                double height = meteor.Height;
+
+                Rect meteorRect = new Rect(left + mapOffsetX, top + mapOffsetY, width, height);
+
+                if (meteorRect.Contains(clickPos))
+                {
+                    mapCanvas.Children.Remove(meteor);
+                    meteors.Remove(meteor);
+                    obstacleHitboxes.Remove(meteorRect);
+#if DEBUG
+                    Console.WriteLine("Meteor clicked");
+#endif
+                }
+            }
+        }
+
         public void AddMeteor()
         {
-            BitmapImage meteorImage = new BitmapImage(
-                new Uri("pack://application:,,,/asset/ground/meteor.png"));
+            
 
             int maxTries = 100;
             for (int tries = 0; tries < maxTries; tries++)
@@ -450,145 +616,62 @@ namespace AstroShooter
             }
         }
 
-        private void Window_KeyDown(object sender, KeyEventArgs e)
-        {
-            pressedKeys.Add(e.Key);
+        // =====================
+        // UI / MENUS
+        // =====================
 
-            if (e.Key == Key.Escape)
+
+        public void AfficheRules(object sender, RoutedEventArgs e)
+        {
+#if DEBUG
+            Console.WriteLine("AffichageRules");
+#endif
+            UCRules uCRules = new UCRules();
+            ScreenContainer.Children.Add(uCRules);
+
+        }
+
+        private void AffichePauseMenu()
+        {
+            if (isPaused)
             {
-                if (!isPaused)
-                    AffichePauseMenu();
-                else
-                    ResumeGame();
+                return;
             }
-        }
+            isPaused = true;
+#if DEBUG
+            Console.WriteLine("AffichagePauseMenu");
+#endif
 
-        private void CreatePlayer()
-        {
-            // Création du personnage temporaire (cube rouge)
-            player = new Rectangle
-            {
-                Width = 40,
-                Height = 40,
-                Fill = Brushes.Red
-            };
+            UCPauseScreen pause = new UCPauseScreen();
+            pause.ResumeRequested += (s, e) => ResumeGame();
 
-            // Position fixe au centre de l'écran
-            GameCanvas.Children.Add(player);
-        }
-
-        private void CenterMapOnPlayer()
-        {
-            // Calcule l'offset pour centrer la map sur le joueur (basé sur le viewport)
-            double centerX = (GameCanvas.ActualWidth - player.Width) / 2;
-            double centerY = (GameCanvas.ActualHeight - player.Height) / 2;
-
-            // Position initiale du joueur au centre de la map
-            mapOffsetX = centerX - (MapSize * TileSize / 2.0) + (player.Width / 2);
-            mapOffsetY = centerY - (MapSize * TileSize / 2.0) + (player.Height / 2);
-
-            UpdatePositions();
-        }
-
-        private void UpdatePositions()
-        {
-            // Le joueur reste toujours au centre du viewport
-            double centerX = (GameCanvas.ActualWidth - player.Width) / 2;
-            double centerY = (GameCanvas.ActualHeight - player.Height) / 2;
-
-            Canvas.SetLeft(player, centerX);
-            Canvas.SetTop(player, centerY);
-
-            // La map se déplace pour créer l'illusion de mouvement
-            Canvas.SetLeft(mapCanvas, mapOffsetX);
-            Canvas.SetTop(mapCanvas, mapOffsetY);
-        }
-
-
-
-        private void Window_KeyUp(object sender, KeyEventArgs e)
-        {
-            pressedKeys.Remove(e.Key);
-        }
-
-        protected override void OnClosed(EventArgs e)
-        {
-            // Arrêter la boucle de jeu proprement
-            CompositionTarget.Rendering -= GameLoop;
+            //UCPauseScreen.ButRules.Click += AfficheRules;
+            ScreenContainer.Children.Add(pause);
+            GameCanvas.Effect = new BlurEffect();
             gameTime.Stop();
-            base.OnClosed(e);
         }
 
-        private void GameCanvas_KeyDown(object sender, KeyEventArgs e)
+
+
+        // =====================
+        // AUDIO
+        // =====================
+
+        public void DemarrageMusique()
         {
-            if (e.Key == Key.Space)
-            {
-                double playerCenterX = Canvas.GetLeft(player) + player.Width / 2;
-                double playerCenterY = Canvas.GetTop(player) + player.Height / 2;
-                Point position = Mouse.GetPosition(GameCanvas);
-                double pX = position.X;
-                double pY = position.Y;
-                Vector direction = new Vector(pX - playerCenterX, pY - playerCenterY);
-                direction.Normalize();
-                bullet = new Rectangle
-                {
-                    Width = 10,
-                    Height = 4,
-                    Fill = Brushes.Black
-
-                };
-                Canvas.SetLeft(bullet, playerCenterX);
-                Canvas.SetTop(bullet, playerCenterY);
-                GameCanvas.Children.Add(bullet);
-
-                //Bullet angle
-                double angle = Math.Atan2(direction.Y, direction.X) * 180 / Math.PI;
-                bullet.RenderTransform = new RotateTransform(angle);
-
-                bullets.Add(bullet);
-                directions.Add(direction);
 #if DEBUG
-                Console.WriteLine("Space pressed at Mouse X: " + pX + " Mouse Y: " + pY);
-                Console.WriteLine("vector X: " + direction.X + " vector Y: " + direction.Y);
-                Console.WriteLine("Angle: " + angle);
+            Console.WriteLine("Lancement musique");
 #endif
-            }
-        }
-        private bool CheckCollision(Rect playerRect)
-        {
-            foreach (Rect obstacle in obstacleHitboxes)
-            {
-                if (playerRect.IntersectsWith(obstacle))
-                {
-                    return true; // Collision détectée !
-                }
-            }
-            return false; // Voie libre
+            music.Open(new Uri(AppDomain.CurrentDomain.BaseDirectory + "asset/sons/music.mp3"));
+            music.Volume = 0.5;
+            music.MediaEnded += RelanceMusique;
+            music.Play();
         }
 
-        private void GameCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void RelanceMusique(object? sender, EventArgs e)
         {
-            Point clickPos = e.GetPosition(GameCanvas);
-
-            foreach (var meteor in meteors.ToList()) // copie la liste pour éviter les problèmes de modification pendant l'itération
-            {
-                double left = Canvas.GetLeft(meteor);
-                double top = Canvas.GetTop(meteor);
-                double width = meteor.Width;
-                double height = meteor.Height;
-
-                Rect meteorRect = new Rect(left + mapOffsetX, top + mapOffsetY, width, height);
-
-                if (meteorRect.Contains(clickPos))
-                {
-                    mapCanvas.Children.Remove(meteor);
-                    meteors.Remove(meteor);
-                    obstacleHitboxes.Remove(meteorRect);
-#if DEBUG
-                    Console.WriteLine("Meteor clicked");
-#endif
-                }
-            }
+            music.Position = TimeSpan.Zero;
+            music.Play();
         }
     }
 }
