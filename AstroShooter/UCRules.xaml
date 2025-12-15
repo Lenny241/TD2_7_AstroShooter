@@ -6,7 +6,7 @@
              xmlns:local="clr-namespace:AstroShooter"
              mc:Ignorable="d" 
              d:DesignHeight="850" d:DesignWidth="1375">
-    <Grid Background="#FF89CFD8">
+    <Grid x:Name="GridRules" Background="#FF89CFD8">
         <Label x:Name="labParameter" Content="Rules" HorizontalAlignment="Center" Margin="0,75,0,0" VerticalAlignment="Top" FontSize="30" FontFamily="72 Black">
             <Label.Foreground>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">

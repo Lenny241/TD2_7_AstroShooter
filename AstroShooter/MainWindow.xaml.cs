@@ -146,6 +146,7 @@ namespace AstroShooter
 
             isPlaying = true;
             isPaused = false;
+            currentLives = 3;
             lifedisplay();
         }
 
@@ -176,6 +177,7 @@ namespace AstroShooter
         private void GameOver()
         {
             StopGame();
+            GameOverScreen();
         }
 
         private void StopGame()
@@ -190,7 +192,6 @@ namespace AstroShooter
             GenerateMap();
             CreatePlayer();
             CenterMapOnPlayer();
-            ShowStartScreen();
             music.Stop();
             music.Play();
         }
@@ -900,6 +901,17 @@ namespace AstroShooter
         private void Quit()
         {
             StopGame();
+        }
+
+        private void GameOverScreen()
+        {
+#if DEBUG
+            Console.WriteLine("Show GameOver screen");
+#endif
+            Blur();
+            UCGameOver gameOver = new UCGameOver();
+            gameOver.CloseGameOverRequested += (s, e) => ShowStartScreen();
+            ScreenContainer.Children.Add(gameOver);
         }
 
         // =====================
