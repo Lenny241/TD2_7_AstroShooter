@@ -64,6 +64,8 @@ namespace AstroShooter
 
         private List<Rect> obstacleHitboxes = new();
 
+        private int nbNuggets = 0;
+
         private Canvas mapCanvas = null!;
         private double mapOffsetX = 0;
         private double mapOffsetY = 0;
@@ -148,6 +150,8 @@ namespace AstroShooter
             isPaused = false;
             currentLives = 3;
             lifedisplay();
+            nbNuggets = 0;
+            nuggetsDisplay();
         }
 
         public void ResumeGame()
@@ -352,6 +356,10 @@ namespace AstroShooter
             }
         }
 
+        private void AddNugget()
+        {
+            nbNuggets++;
+        }
         private void CreatePlayer()
         {
             // On remplace le Rectangle par une Image
@@ -772,7 +780,7 @@ namespace AstroShooter
                     mapCanvas.Children.Remove(meteor);
                     meteors.Remove(meteor);
                     obstacleHitboxes.Remove(meteorHitbox);
-                    RemoveLife();
+                    AddNugget();
 #if DEBUG
                     Console.WriteLine("Meteor clicked");
 #endif
@@ -912,6 +920,11 @@ namespace AstroShooter
             UCGameOver gameOver = new UCGameOver();
             gameOver.CloseGameOverRequested += (s, e) => ShowStartScreen();
             ScreenContainer.Children.Add(gameOver);
+        }
+
+        private void nuggetsDisplay()
+        {
+            NuggetCount.Text = "Nuggets: " + nbNuggets;
         }
 
         // =====================
