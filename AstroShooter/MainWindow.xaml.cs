@@ -26,6 +26,12 @@ namespace AstroShooter
         private static readonly ushort TILE_SIZE = 275;
         private static readonly double MOVE_SPEED = 300;
         private static readonly double BULLET_SPEED = 600;
+
+        private static readonly int CENTER_MIN = (MAP_SIZE / 2) - 1;
+        private static readonly int CENTER_MAX = (MAP_SIZE / 2) + 1;
+        private static readonly int MAP_LIMITE_LOW = 3;
+        private static readonly int MAP_LIMITE_HIGH = MAP_SIZE - 3;
+
         public static readonly ushort INITIAL_METEOR_COUNT = 6;
         
         private double timeSinceLastShoot = 0;
@@ -493,74 +499,38 @@ namespace AstroShooter
 
         private void GenerateMap()
         {
-            // Initialisation du Canvas
-            if (mapCanvas == null)
-            {
-                mapCanvas = new Canvas();
-            }
-
-            // Nettoyer le canvas si on régénère la carte (évite de superposer des cartes)
+            // 1. Initialisation
+            if (mapCanvas == null) mapCanvas = new Canvas();
             mapCanvas.Children.Clear();
+            obstacleHitboxes.Clear();
 
-            // Initialisation des outils
-            Image[,] tileGrid = new Image[MAP_SIZE, MAP_SIZE];
-
-            // Chargement des images (UNE SEULE FOIS pour la performance)
-
-
-
-            // Création des tuiles de sol
+            // 2. Boucle unique pour le sol et les obstacles
             for (int row = 0; row < MAP_SIZE; row++)
             {
                 for (int col = 0; col < MAP_SIZE; col++)
                 {
+                    double posX = col * TILE_SIZE;
+                    double posY = row * TILE_SIZE;
+
+                    // --- A. Création du Sol ---
                     Image tile = new Image
                     {
                         Source = tileImage,
-                        Width = TILE_SIZE + 1,
-                        Height = TILE_SIZE + 1
+                        Width = TILE_SIZE,
+                        Height = TILE_SIZE
                     };
-                    tileGrid[row, col] = tile;
-                }
-            }
 
-            // Affichage du sol ET ajout des obstacles
-            for (int row = 0; row < MAP_SIZE; row++)
-            {
-                for (int col = 0; col < MAP_SIZE; col++)
-                {
-
-                    Image tile = tileGrid[row, col];
-                    Canvas.SetLeft(tile, col * TILE_SIZE);
-                    Canvas.SetTop(tile, row * TILE_SIZE);
-                    Panel.SetZIndex(tile, 0); // Le sol est en bas (Couche 0)
+                    Canvas.SetLeft(tile, posX);
+                    Canvas.SetTop(tile, posY);
                     mapCanvas.Children.Add(tile);
 
-                    // bordure de la carte en 3 tuiles de large
-                    bool estBordure = (row == 0 || col == 0 || row == 1 || col == 1 || row == 2 || col == 2 ||
-                                       row == MAP_SIZE - 1 || col == MAP_SIZE - 1 || row == MAP_SIZE - 2 || col == MAP_SIZE - 2 || row == MAP_SIZE - 3 || col == MAP_SIZE - 3);
+                    // --- B. Logique des Obstacles ---
 
-                    // centre de la carte en dimension 3x3
-                    bool estCentre = (row >= (MAP_SIZE / 2 - 1) && row <= (MAP_SIZE / 2 + 1) &&
-                                      col >= (MAP_SIZE / 2 - 1) && col <= (MAP_SIZE / 2 + 1));
+                    // Optimisation de la détection de bordure (plus rapide que votre booléen géant)
+                    bool estBordure = (row < MAP_LIMITE_LOW || row >= MAP_LIMITE_HIGH || col < MAP_LIMITE_LOW || col >= MAP_LIMITE_HIGH);
 
-                    // positionnement d'une seul fusé au centre de la carte
-                    if (estCentre)
-                    {
-                        int centerRow = MAP_SIZE / 2;
-                        int centerCol = MAP_SIZE / 2 + 1;
-                        Image rocket = new Image
-                        {
-                            Source = rocketImage,
-                            Width = TILE_SIZE,
-                            Height = TILE_SIZE
-                        };
-                        double rocketLeft = centerCol * TILE_SIZE;
-                        double rocketTop = centerRow * TILE_SIZE;
-                        Canvas.SetLeft(rocket, rocketLeft);
-                        Canvas.SetTop(rocket, rocketTop);
-                        Panel.SetZIndex(rocket, 1);
-                        mapCanvas.Children.Add(rocket);
+                    // Optimisation de la détection du centre
+                    bool estCentre = (row >= CENTER_MIN && row <= CENTER_MAX && col >= CENTER_MIN && col <= CENTER_MAX);
 
                         RocketHitBox = new Rect(
                             rocketLeft,   // Marge à gauche
@@ -578,16 +548,12 @@ namespace AstroShooter
 
                     if (estBordure)
                     {
-                        mettreObstacle = true; // Mur obligatoire
+                        mettreObstacle = true;
                     }
-                    if (estCentre)
+                    else if (!estCentre)
                     {
-                        mettreObstacle = false; // Pas d'obstacle au centre
-                    }
-                    else
-                    {
-                        // 10% de chance d'avoir un rocher
-                        if (rnd.Next(0, 100) < 10)
+                        // 10% de chance pour chaque tile non bordure et non centre
+                        if (rnd.NextDouble() < 0.1)
                         {
                             mettreObstacle = true;
                         }
@@ -598,50 +564,58 @@ namespace AstroShooter
                         Image obstacle = new Image
                         {
                             Source = obstacleImage,
-                            // On garde vos dimensions visuelles
                             Width = TILE_SIZE + 25,
                             Height = TILE_SIZE + 75
                         };
 
-                        double obsLeft = col * TILE_SIZE - 15;
-                        double obsTop = row * TILE_SIZE - 60;
+                        double obsLeft = posX - 15;
+                        double obsTop = posY - 60;
 
                         Canvas.SetLeft(obstacle, obsLeft);
                         Canvas.SetTop(obstacle, obsTop);
-                        Panel.SetZIndex(obstacle, 1);
+                        Panel.SetZIndex(obstacle, 1); // Au-dessus du sol
 
                         mapCanvas.Children.Add(obstacle);
 
                         Rect hitBox = new Rect(
-                            obsLeft + 40,   // Marge à gauche
-                            obsTop + 80,    // Marge en haut (le rocher est haut visuellement)
-                            TILE_SIZE - 10,  // Largeur réelle de l'obstacle
-                            TILE_SIZE - 10   // Hauteur réelle de l'obstacle
+                            obsLeft + 40,
+                            obsTop + 80,
+                            TILE_SIZE - 10,
+                            TILE_SIZE - 10
                         );
                         obstacleHitboxes.Add(hitBox);
                     }
-
-
-                    // ajout de metéores aléatoires
-                    if (estCentre || mettreObstacle || estBordure)
-                    {
-                        // Ne rien faire au centre (position du joueur)
-                    }
-                    else
-                    {
-
-                    }
                 }
-
-                // Ajouter le Canvas à la fenêtre s'il n'y est pas déjà
-                if (!GameCanvas.Children.Contains(mapCanvas))
-                {
-                    GameCanvas.Children.Add(mapCanvas);
-                }
-
-
             }
 
+            // 3. Placement de la Fusée 
+            int rocketRow = MAP_SIZE / 2;
+            int rocketCol = MAP_SIZE / 2 + 1;
+
+            double rocketLeft = rocketCol * TILE_SIZE;
+            double rocketTop = rocketRow * TILE_SIZE;
+
+            Image rocket = new Image
+            {
+                Source = rocketImage,
+                Width = TILE_SIZE,
+                Height = TILE_SIZE
+            };
+
+            Canvas.SetLeft(rocket, rocketLeft);
+            Canvas.SetTop(rocket, rocketTop);
+            Panel.SetZIndex(rocket, 2); // Au-dessus des obstacles si besoin
+            mapCanvas.Children.Add(rocket);
+
+            obstacleHitboxes.Add(new Rect(rocketLeft, rocketTop, TILE_SIZE, TILE_SIZE));
+
+            // 4. Ajout au Canvas principal
+            if (!GameCanvas.Children.Contains(mapCanvas))
+            {
+                GameCanvas.Children.Add(mapCanvas);
+            }
+
+            // 5. Météores
             for (int i = 0; i < INITIAL_METEOR_COUNT; i++)
             {
                 AddMeteor();
@@ -691,6 +665,8 @@ namespace AstroShooter
 
         public void AddMeteor()
         {
+            
+
             int maxTries = 100;
             for (int tries = 0; tries < maxTries; tries++)
             {
@@ -700,34 +676,38 @@ namespace AstroShooter
                 double metLeft = col * TILE_SIZE + rnd.Next(-20, 20);
                 double metTop = row * TILE_SIZE + rnd.Next(-20, 20);
 
+                bool escentre = (row >= CENTER_MIN && row <= CENTER_MAX && col >= CENTER_MIN && col <= CENTER_MAX);
+
                 Rect newMeteorRect = new Rect(metLeft, metTop, TILE_SIZE, TILE_SIZE);
 
-                bool collision = false;
-                for (int i = 0; i < obstacleHitboxes.Count; i++)
-                {
-                    if (obstacleHitboxes[i].IntersectsWith(newMeteorRect))
+                if (!escentre) { 
+                    bool collision = false;
+                    for (int i = 0; i < obstacleHitboxes.Count; i++)
                     {
-                        collision = true;
-                        break;
+                        if (obstacleHitboxes[i].IntersectsWith(newMeteorRect))
+                        {
+                            collision = true;
+                            break;
+                        }
                     }
-                }
 
-                if (!collision)
-                {
-                    Image meteor = new Image
+                    if (!collision)
                     {
-                        Source = meteorImage,
-                        Width = TILE_SIZE,
-                        Height = TILE_SIZE
-                    };
+                        Image meteor = new Image
+                        {
+                            Source = meteorImage,
+                            Width = TILE_SIZE,
+                            Height = TILE_SIZE
+                        };
 
-                    Canvas.SetLeft(meteor, metLeft);
-                    Canvas.SetTop(meteor, metTop);
-                    Panel.SetZIndex(meteor, 1);
-                    mapCanvas.Children.Add(meteor);
-                    meteors.Add(meteor);
-                    obstacleHitboxes.Add(newMeteorRect);
-                    return;
+                        Canvas.SetLeft(meteor, metLeft);
+                        Canvas.SetTop(meteor, metTop);
+                        Panel.SetZIndex(meteor, 1);
+                        mapCanvas.Children.Add(meteor);
+                        meteors.Add(meteor);
+                        obstacleHitboxes.Add(newMeteorRect);
+                        return;
+                    }
                 }
             }
         }
