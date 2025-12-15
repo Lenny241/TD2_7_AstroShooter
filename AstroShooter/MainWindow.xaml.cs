@@ -4,7 +4,9 @@ using System.Diagnostics.Metrics;
 using System.DirectoryServices;
 using System.Runtime.CompilerServices;
 using System.Security.Permissions;
+using System.Security.Policy;
 using System.Windows;
+using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -33,11 +35,15 @@ namespace AstroShooter
 
         public static readonly ushort INITIAL_METEOR_COUNT = 6;
         public static readonly ushort INITIAL_ENEMY_COUNT = 5;
+        public static ushort MAX_LIVES = 5;
 
         private double timeSinceLastShoot = 0;
         double shootCooldown = 0.3;
         Random rnd = new Random();
         Rect RocketHitBox;
+
+        private List<Rectangle> lives = new();
+        private int currentLives = 3;
 
         private static readonly MediaPlayer music = new MediaPlayer();
         public static void PlayMusic() => music.Play();
@@ -139,6 +145,8 @@ namespace AstroShooter
 
             isPlaying = true;
             isPaused = false;
+            currentLives = 3;
+            lifedisplay();
         }
 
         public void ResumeGame()
@@ -163,6 +171,28 @@ namespace AstroShooter
             CompositionTarget.Rendering -= GameLoop;
             gameTime.Stop();
             base.OnClosed(e);
+        }
+
+        private void GameOver()
+        {
+            StopGame();
+            GameOverScreen();
+        }
+
+        private void StopGame()
+        {
+            isPlaying = false;
+            isPaused = false;
+            gameTime.Stop();
+            GameCanvas.Children.Clear();
+            bullets.Clear();
+            directions.Clear();
+            obstacleHitboxes.Clear();
+            GenerateMap();
+            CreatePlayer();
+            CenterMapOnPlayer();
+            music.Stop();
+            music.Play();
         }
 
         // =====================
@@ -298,6 +328,76 @@ namespace AstroShooter
         // =====================
         // PLAYER
         // =====================
+
+        private void lifedisplay()
+        {
+            foreach (Rectangle life in lives)
+            {
+                GameCanvas.Children.Remove(life);
+            }
+            lives.Clear();
+
+            for (int i = 0; i < currentLives; i++)
+            {
+
+                Rectangle life = new Rectangle
+                {
+                    Width = 40,
+                    Height = 40,
+                    Fill = Brushes.Black
+                };
+                Canvas.SetLeft(life, i*100+10);
+                Canvas.SetTop(life, 10);
+                GameCanvas.Children.Add(life);
+                lives.Add(life);
+            }
+        }
+
+        private void AddLife()
+        {
+            if (currentLives < MAX_LIVES)
+            {
+#if DEBUG
+                Console.WriteLine("Adding life");
+#endif
+                Rectangle life = new Rectangle
+                {
+                    Width = 40,
+                    Height = 40,
+                    Fill = Brushes.Black
+                };
+
+                Canvas.SetLeft(life, lives.Count * 100 + 10);
+                Canvas.SetTop(life, 10);
+
+                GameCanvas.Children.Add(life);
+                lives.Add(life);
+                currentLives++;
+            }
+        }
+
+        private void RemoveLife()
+        {
+            if (currentLives > 0)
+            {
+#if DEBUG
+                Console.WriteLine("Removing life");
+#endif
+                int last = lives.Count - 1;
+                GameCanvas.Children.Remove(lives[last]);
+                lives.RemoveAt(last);
+                currentLives--;
+
+                if (currentLives == 0)
+                {
+                    GameOver();
+#if DEBUG
+                    Console.WriteLine("GameOver");
+#endif
+
+                }
+            }
+        }
 
         private void CreatePlayer()
         {
@@ -719,6 +819,7 @@ namespace AstroShooter
                     mapCanvas.Children.Remove(meteor);
                     meteors.Remove(meteor);
                     obstacleHitboxes.Remove(meteorHitbox);
+                    RemoveLife();
 #if DEBUG
                     Console.WriteLine("Meteor clicked");
 #endif
@@ -846,22 +947,19 @@ namespace AstroShooter
 
         private void Quit()
         {
-            isPlaying = false;
-            isPaused = false;
-            gameTime.Stop();
-            GameCanvas.Children.Clear();
-            bullets.Clear();
-            directions.Clear();
-            obstacleHitboxes.Clear();
-            GenerateMap();
-            CreatePlayer();
-            CenterMapOnPlayer();
-            ShowStartScreen();
-            music.Stop();
-            music.Play();
+            StopGame();
         }
 
-
+        private void GameOverScreen()
+        {
+#if DEBUG
+            Console.WriteLine("Show GameOver screen");
+#endif
+            Blur();
+            UCGameOver gameOver = new UCGameOver();
+            gameOver.CloseGameOverRequested += (s, e) => ShowStartScreen();
+            ScreenContainer.Children.Add(gameOver);
+        }
 
         // =====================
         // AUDIO

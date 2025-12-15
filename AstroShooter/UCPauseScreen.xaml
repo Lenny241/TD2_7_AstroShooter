@@ -9,7 +9,7 @@
     <UserControl.Background>
         <ImageBrush/>
     </UserControl.Background>
-    <Grid x:Name="GridMenu" Height="850" Width="1375" Panel.ZIndex="10">
+    <Grid x:Name="GridPauseScreen" Height="850" Width="1375" Panel.ZIndex="10">
         <Label x:Name="labPause" Content="Pause" HorizontalAlignment="Center" Margin="0,75,0,0" VerticalAlignment="Top" FontSize="48" FontFamily="72 Black">
             <Label.Foreground>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
