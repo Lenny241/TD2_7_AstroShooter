@@ -23,7 +23,7 @@ namespace AstroShooter
     {
         private static readonly ushort MAP_SIZE = 26;
         private static readonly ushort TILE_SIZE = 275;
-        private static readonly double MOVE_SPEED = 300;
+        private static readonly double MOVE_SPEED = 900;
         private static readonly double BULLET_SPEED = 600;
 
         private static readonly int CENTER_MIN = (MAP_SIZE / 2) - 1;
@@ -32,7 +32,8 @@ namespace AstroShooter
         private static readonly int MAP_LIMITE_HIGH = MAP_SIZE - 3;
 
         public static readonly ushort INITIAL_METEOR_COUNT = 6;
-        
+        public static readonly ushort INITIAL_ENEMY_COUNT = 5;
+
         private double timeSinceLastShoot = 0;
         double shootCooldown = 0.3;
         Random rnd = new Random();
@@ -70,6 +71,9 @@ namespace AstroShooter
         private List<BitmapImage> animLeft = new List<BitmapImage>();
         private List<BitmapImage> animRight = new List<BitmapImage>();
 
+        private Image enemy = null!;
+        private BitmapImage enemyImage = null!;
+
         private int currentFrame = 0;
         private double frameTimer = 0;         // Compteur de temps
         private double timePerFrame = 0.1;     // Vitesse : change d'image toutes les 0.1 secondes
@@ -105,6 +109,8 @@ namespace AstroShooter
                 animRight.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/character/right/characterRight_{i}.png")));
                 // Fais pareil pour Left et Right...
             }
+
+            enemyImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/meteor.png"));
 
             meteorImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/asteroide.png"));
             tileImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/classicGroundTile1.png"));
@@ -223,6 +229,23 @@ namespace AstroShooter
         // =====================
         // ENEMIES
         // =====================
+
+        private void AddEnemy()
+        {
+            enemy = new Image
+            {
+                Width = 50,
+                Height = 50,
+                Source = enemyImage,
+                Stretch = Stretch.Uniform // Pour garder les proportions
+            };
+            double posX = rnd.Next(0, MAP_SIZE * TILE_SIZE - (int)enemy.Width);
+            double posY = rnd.Next(0, MAP_SIZE * TILE_SIZE - (int)enemy.Height);
+            Canvas.SetLeft(enemy, posX);
+            Canvas.SetTop(enemy, posY);
+            mapCanvas.Children.Add(enemy);
+
+        }
 
         // =====================
         // PLAYER
@@ -605,6 +628,11 @@ namespace AstroShooter
             {
                 AddMeteor();
             }
+
+            for (int i = 0; i < INITIAL_ENEMY_COUNT; i++)
+            {
+                AddEnemy();
+            }
         }
 
         private void GameCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -638,8 +666,6 @@ namespace AstroShooter
 
         public void AddMeteor()
         {
-           
-
             int maxTries = 100;
             for (int tries = 0; tries < maxTries; tries++)
             {
