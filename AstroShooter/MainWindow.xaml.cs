@@ -11,6 +11,7 @@ using System.Windows.Media;
 using System.Windows.Media.Converters;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.Media3D;
 using System.Windows.Shapes;
 
 
@@ -37,6 +38,8 @@ namespace AstroShooter
         private double timeSinceLastShoot = 0;
         double shootCooldown = 0.3;
         Random rnd = new Random();
+
+        Rect RocketHitBox;
 
         private static readonly MediaPlayer music = new MediaPlayer();
         public static void PlayMusic() => music.Play();
@@ -552,6 +555,18 @@ namespace AstroShooter
                     // Optimisation de la détection du centre
                     bool estCentre = (row >= CENTER_MIN && row <= CENTER_MAX && col >= CENTER_MIN && col <= CENTER_MAX);
 
+                        RocketHitBox = new Rect(
+                            rocketLeft,   // Marge à gauche
+                            rocketTop,    // Marge en haut (le rocher est haut visuellement)
+                            TILE_SIZE,  // Largeur réelle de l'obstacle
+                            TILE_SIZE  // Hauteur réelle de l'obstacle
+                        );
+                        obstacleHitboxes.Add(RocketHitBox);
+
+                    }
+
+
+                    // ajout d'obstacles (rochers)
                     bool mettreObstacle = false;
 
                     if (estBordure)
@@ -638,6 +653,19 @@ namespace AstroShooter
         private void GameCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             Point clickPos = e.GetPosition(GameCanvas);
+            // Hitbox en coordonnées monde (comme stockée dans obstacleHitboxes)
+
+
+            // Convertir le clic écran en coordonnées monde
+            Point clickWorld = new Point(clickPos.X - mapOffsetX, clickPos.Y - mapOffsetY);
+
+            if (RocketHitBox.Contains(clickWorld))
+            {
+                ShowShopScreen();
+#if DEBUG
+                Console.WriteLine("Ship clicked");
+#endif
+            }
 
             foreach (var meteor in meteors.ToList())
             {
@@ -646,11 +674,8 @@ namespace AstroShooter
                 double width = meteor.Width;
                 double height = meteor.Height;
 
-                // Hitbox en coordonnées monde (comme stockée dans obstacleHitboxes)
                 Rect meteorHitbox = new Rect(left, top, width, height);
 
-                // Convertir le clic écran en coordonnées monde
-                Point clickWorld = new Point(clickPos.X - mapOffsetX, clickPos.Y - mapOffsetY);
 
                 if (meteorHitbox.Contains(clickWorld))
                 {
@@ -662,10 +687,14 @@ namespace AstroShooter
 #endif
                 }
             }
+
+            
         }
 
         public void AddMeteor()
         {
+            
+
             int maxTries = 100;
             for (int tries = 0; tries < maxTries; tries++)
             {
@@ -715,6 +744,27 @@ namespace AstroShooter
         // UI / MENUS
         // =====================
 
+        public void ShowShopScreen()
+        {
+            music.Pause();
+            gameTime.Stop();
+            ScreenContainer.Children.Clear();
+            UCShop shop = new UCShop();
+            shop.CloseShopRequested += (s, e) => CloseShopScreen();
+            ScreenContainer.Children.Add(shop);
+            Blur();
+            isPaused = true;
+        }
+
+        public void CloseShopScreen()
+        {
+            ScreenContainer.Children.Clear();
+            GameCanvas.Effect = null;
+            gameTime.Start();
+            isPaused = false;
+            music.Play();
+        }
+
         public void ShowStartScreen()
         {
             ScreenContainer.Children.Clear();
@@ -742,11 +792,15 @@ namespace AstroShooter
             ShowPauseScreenUI();
         }
 
+        private void Blur()
+        {
+            GameCanvas.Effect = new BlurEffect();
+        }
         private void ShowPauseScreenUI()
         {
             music.Pause();
             gameTime.Stop();
-            GameCanvas.Effect = new BlurEffect();
+            Blur();
             UCPauseScreen pause = new UCPauseScreen();
             pause.ResumeRequested += (s, e) => ResumeGame();
             pause.QuitRequested += (s, e) => Quit();
