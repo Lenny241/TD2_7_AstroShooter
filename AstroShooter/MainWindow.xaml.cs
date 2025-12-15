@@ -536,8 +536,8 @@ namespace AstroShooter
                     Image tile = new Image
                     {
                         Source = tileImage,
-                        Width = TILE_SIZE,
-                        Height = TILE_SIZE
+                        Width = TILE_SIZE +1,
+                        Height = TILE_SIZE +1
                     };
 
                     Canvas.SetLeft(tile, posX);
