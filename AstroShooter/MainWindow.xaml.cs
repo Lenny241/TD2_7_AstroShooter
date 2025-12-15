@@ -37,6 +37,7 @@ namespace AstroShooter
         private double timeSinceLastShoot = 0;
         double shootCooldown = 0.3;
         Random rnd = new Random();
+        Rect RocketHitBox;
 
         private static readonly MediaPlayer music = new MediaPlayer();
         public static void PlayMusic() => music.Play();
@@ -610,12 +611,16 @@ namespace AstroShooter
                 Height = TILE_SIZE
             };
 
+
+
             Canvas.SetLeft(rocket, rocketLeft);
             Canvas.SetTop(rocket, rocketTop);
             Panel.SetZIndex(rocket, 2); // Au-dessus des obstacles si besoin
             mapCanvas.Children.Add(rocket);
 
-            obstacleHitboxes.Add(new Rect(rocketLeft, rocketTop, TILE_SIZE, TILE_SIZE));
+            RocketHitBox = new Rect(rocketLeft, rocketTop, TILE_SIZE, TILE_SIZE);
+
+            obstacleHitboxes.Add(RocketHitBox);
 
             // 4. Ajout au Canvas principal
             if (!GameCanvas.Children.Contains(mapCanvas))
@@ -638,6 +643,19 @@ namespace AstroShooter
         private void GameCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             Point clickPos = e.GetPosition(GameCanvas);
+            // Hitbox en coordonnées monde (comme stockée dans obstacleHitboxes)
+
+
+            // Convertir le clic écran en coordonnées monde
+            Point clickWorld = new Point(clickPos.X - mapOffsetX, clickPos.Y - mapOffsetY);
+
+            if (RocketHitBox.Contains(clickWorld))
+            {
+                ShowShopScreen();
+#if DEBUG
+                Console.WriteLine("Ship clicked");
+#endif
+            }
 
             foreach (var meteor in meteors.ToList())
             {
@@ -646,11 +664,8 @@ namespace AstroShooter
                 double width = meteor.Width;
                 double height = meteor.Height;
 
-                // Hitbox en coordonnées monde (comme stockée dans obstacleHitboxes)
                 Rect meteorHitbox = new Rect(left, top, width, height);
 
-                // Convertir le clic écran en coordonnées monde
-                Point clickWorld = new Point(clickPos.X - mapOffsetX, clickPos.Y - mapOffsetY);
 
                 if (meteorHitbox.Contains(clickWorld))
                 {
@@ -715,6 +730,27 @@ namespace AstroShooter
         // UI / MENUS
         // =====================
 
+        public void ShowShopScreen()
+        {
+            music.Pause();
+            gameTime.Stop();
+            ScreenContainer.Children.Clear();
+            UCShop shop = new UCShop();
+            shop.CloseShopRequested += (s, e) => CloseShopScreen();
+            ScreenContainer.Children.Add(shop);
+            Blur();
+            isPaused = true;
+        }
+
+        public void CloseShopScreen()
+        {
+            ScreenContainer.Children.Clear();
+            GameCanvas.Effect = null;
+            gameTime.Start();
+            isPaused = false;
+            music.Play();
+        }
+
         public void ShowStartScreen()
         {
             ScreenContainer.Children.Clear();
@@ -742,11 +778,15 @@ namespace AstroShooter
             ShowPauseScreenUI();
         }
 
+        private void Blur()
+        {
+            GameCanvas.Effect = new BlurEffect();
+        }
         private void ShowPauseScreenUI()
         {
             music.Pause();
             gameTime.Stop();
-            GameCanvas.Effect = new BlurEffect();
+            Blur();
             UCPauseScreen pause = new UCPauseScreen();
             pause.ResumeRequested += (s, e) => ResumeGame();
             pause.QuitRequested += (s, e) => Quit();
