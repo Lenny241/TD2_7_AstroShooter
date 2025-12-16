@@ -27,12 +27,10 @@ namespace AstroShooter
         private static readonly ushort TILE_SIZE = 275;
         private static readonly double MOVE_SPEED = 900;
         private static readonly double BULLET_SPEED = 600;
-
         private static readonly int CENTER_MIN = (MAP_SIZE / 2) - 1;
         private static readonly int CENTER_MAX = (MAP_SIZE / 2) + 1;
         private static readonly int MAP_LIMITE_LOW = 3;
         private static readonly int MAP_LIMITE_HIGH = MAP_SIZE - 3;
-
         public static readonly ushort INITIAL_METEOR_COUNT = 6;
         public static readonly ushort INITIAL_ENEMY_COUNT = 5;
         public static ushort MAX_LIVES = 5;
@@ -42,7 +40,7 @@ namespace AstroShooter
         Random rnd = new Random();
         Rect RocketHitBox;
 
-        private List<Rectangle> lives = new();
+        private List<Image> lives = new();
         private int currentLives = 3;
 
         private static readonly MediaPlayer music = new MediaPlayer();
@@ -94,6 +92,7 @@ namespace AstroShooter
         private BitmapImage obstacleImage = null!;
         private BitmapImage obstacleTileImage= null!;
         private BitmapImage rocketImage = null!;
+        private BitmapImage lifeIconImage = null!;
 
         // =====================
         // GAME STATE
@@ -124,6 +123,7 @@ namespace AstroShooter
             tileImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/classicGroundTile1.png"));
             obstacleImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/rock.png"));
             rocketImage = new BitmapImage(new Uri("pack://application:,,,/asset/character/vaisseau.png"));
+            lifeIconImage = new BitmapImage(new Uri("pack://application:,,,/asset/shop/lifeIcon.png"));
 
             GameCanvas.Focus();
             GenerateMap();
@@ -335,7 +335,7 @@ namespace AstroShooter
 
         private void lifedisplay()
         {
-            foreach (Rectangle life in lives)
+            foreach (Image life in lives)
             {
                 GameCanvas.Children.Remove(life);
             }
@@ -343,17 +343,16 @@ namespace AstroShooter
 
             for (int i = 0; i < currentLives; i++)
             {
-
-                Rectangle life = new Rectangle
+                Image lifeIcon = new Image
                 {
                     Width = 40,
                     Height = 40,
-                    Fill = Brushes.Black
+                    Source = lifeIconImage,
                 };
-                Canvas.SetLeft(life, i*100+10);
-                Canvas.SetTop(life, 10);
-                GameCanvas.Children.Add(life);
-                lives.Add(life);
+                Canvas.SetLeft(lifeIcon, i*100+10);
+                Canvas.SetTop(lifeIcon, 10);
+                GameCanvas.Children.Add(lifeIcon);
+                lives.Add(lifeIcon);
             }
         }
 
@@ -364,18 +363,17 @@ namespace AstroShooter
 #if DEBUG
                 Console.WriteLine("Adding life");
 #endif
-                Rectangle life = new Rectangle
+                Image lifeIcon = new Image
                 {
                     Width = 40,
                     Height = 40,
-                    Fill = Brushes.Black
+                    Source = lifeIconImage,
                 };
+                Canvas.SetLeft(lifeIcon, lives.Count * 100 + 10);
+                Canvas.SetTop(lifeIcon, 10);
 
-                Canvas.SetLeft(life, lives.Count * 100 + 10);
-                Canvas.SetTop(life, 10);
-
-                GameCanvas.Children.Add(life);
-                lives.Add(life);
+                GameCanvas.Children.Add(lifeIcon);
+                lives.Add(lifeIcon);
                 currentLives++;
             }
         }
@@ -398,7 +396,6 @@ namespace AstroShooter
 #if DEBUG
                     Console.WriteLine("GameOver");
 #endif
-
                 }
             }
         }
