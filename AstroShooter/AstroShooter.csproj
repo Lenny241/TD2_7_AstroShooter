@@ -54,7 +54,6 @@
 	  <None Remove="asset\character\up\characterUp_4.png" />    
 	  <None Remove="asset\character\up\shoot\characterUpShoot.png" />    
 	  <None Remove="asset\character\vaisseau.png" />    
-	  <None Remove="asset\enemy\dead\enemy_20.png" />    
 	  <None Remove="asset\enemy\enemy_1.png" />    
 	  <None Remove="asset\enemy\enemy_2.png" />    
 	  <None Remove="asset\enemy\enemy_3.png" />    
@@ -91,7 +90,7 @@
     <Resource Include="asset\character\up\characterUp_4.png" />
     <Resource Include="asset\character\up\shoot\characterUpShoot.png" />
     <Resource Include="asset\character\vaisseau.png" />
-    <Resource Include="asset\enemy\dead\enemy_20.png" />
+    <Resource Include="asset\enemy\dead\enemy_dead.png" />
     <Resource Include="asset\enemy\enemy_1.png" />
     <Resource Include="asset\enemy\enemy_2.png" />
     <Resource Include="asset\enemy\enemy_3.png" />
