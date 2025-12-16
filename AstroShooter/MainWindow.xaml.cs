@@ -78,8 +78,11 @@ namespace AstroShooter
         private List<BitmapImage> animLeft = new List<BitmapImage>();
         private List<BitmapImage> animRight = new List<BitmapImage>();
 
-        private BitmapImage enemy = null!;
-        private List<BitmapImage> animEnemy = new List<BitmapImage>();
+        private List<BitmapImage> enemyAnimImages = new List<BitmapImage>(); // Stocke les 4 sprites
+        private List<Image> enemies = new List<Image>();
+
+        private double enemyFrameTimer = 0;   // Timer spécifique aux ennemis
+        private int enemyCurrentFrame = 0;    // Compteur d'image spécifique aux ennemis
 
         private int currentFrame = 0;
         private double frameTimer = 0;         // Compteur de temps
@@ -114,7 +117,7 @@ namespace AstroShooter
                 animUp.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/character/up/characterUp_{i}.png")));
                 animLeft.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/character/left/characterLeft_{i}.png")));
                 animRight.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/character/right/characterRight_{i}.png")));
-                animEnemy.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/enemy/enemy_{i}.png")));
+                enemyAnimImages.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/enemy/enemy_{i}.png")));
             }
 
 
@@ -188,6 +191,7 @@ namespace AstroShooter
             bullets.Clear();
             directions.Clear();
             obstacleHitboxes.Clear();
+            enemies.Clear();
             GenerateMap();
             CreatePlayer();
             CenterMapOnPlayer();
@@ -242,6 +246,7 @@ namespace AstroShooter
             {
                 MovePlayer(deltaTime);       // Calcule la position et l'état (isMoving, Direction)
                 UpdatePlayerAnimation(deltaTime); // Met à jour l'image en fonction de l'état
+                UpdateEnemyAnimations(deltaTime);
                 MoveBullets(deltaTime);
                 UpdateDisplay();
                 timeSinceLastShoot+= deltaTime;
@@ -260,67 +265,84 @@ namespace AstroShooter
         // ENEMIES
         // =====================
 
-        private void AddEnemy()
+        public void AddEnemy()
         {
-            int maxTries = 100; // Sécurité pour éviter une boucle infinie si la map est pleine
-
+            int maxTries = 100;
             for (int tries = 0; tries < maxTries; tries++)
             {
-                // 1. Choisir une case au hasard (en respectant les limites de la map)
+                // Position aléatoire sur la grille
                 int row = rnd.Next(3, MAP_SIZE - 3);
                 int col = rnd.Next(3, MAP_SIZE - 3);
 
-                // 2. Vérifier qu'on n'est pas dans la zone de départ (centre)
-                bool isCenter = (row >= CENTER_MIN && row <= CENTER_MAX && col >= CENTER_MIN && col <= CENTER_MAX);
-                if (isCenter) continue; // On recommence la boucle si on est au centre
+                double enemyLeft = col * TILE_SIZE + rnd.Next(0, 50); // Petit décalage aléatoire
+                double enemyTop = row * TILE_SIZE + rnd.Next(0, 50);
 
-                // 3. Calculer la position pour centrer l'ennemi dans la case
-                double enemyWidth = 50;
-                double enemyHeight = 50;
+                // Vérifier qu'on n'est pas dans la zone centrale (spawn joueur)
+                bool estCentre = (row >= CENTER_MIN && row <= CENTER_MAX && col >= CENTER_MIN && col <= CENTER_MAX);
 
-                // Formule pour centrer l'objet dans la tuile (TILE_SIZE)
-                double posX = (col * TILE_SIZE) + (TILE_SIZE - enemyWidth) / 2;
-                double posY = (row * TILE_SIZE) + (TILE_SIZE - enemyHeight) / 2;
+                // Création d'une hitbox temporaire pour tester la collision
+                Rect newEnemyRect = new Rect(enemyLeft, enemyTop, 50, 90); // Taille arbitraire (50x90 comme le joueur)
 
-                // Créer une Hitbox temporaire pour tester la collision
-                Rect newEnemyRect = new Rect(
-                    posX, 
-                    posY, 
-                    enemyWidth, 
-                    enemyHeight
-                );
-
-                // 4. Vérifier la collision avec les obstacles existants (Rochers, Fusée, Météores)
-                bool collision = false;
-                foreach (Rect obstacle in obstacleHitboxes)
+                if (!estCentre)
                 {
-                    if (obstacle.IntersectsWith(newEnemyRect))
+                    bool collision = false;
+                    foreach (Rect obstacle in obstacleHitboxes)
                     {
-                        collision = true;
-                        break;
+                        if (obstacle.IntersectsWith(newEnemyRect))
+                        {
+                            collision = true;
+                            break;
+                        }
+                    }
+
+                    // Si l'endroit est libre, on crée l'ennemi
+                    if (!collision)
+                    {
+                        Image enemy = new Image
+                        {
+                            Source = enemyAnimImages[0], // Première image de l'animation
+                            Width = 50,  // Ajustez selon la taille de votre sprite
+                            Height = 90,
+                            Stretch = Stretch.Uniform
+                        };
+
+                        Canvas.SetLeft(enemy, enemyLeft);
+                        Canvas.SetTop(enemy, enemyTop);
+                        Panel.SetZIndex(enemy, 2); // Au même niveau ou au-dessus du joueur
+
+                        mapCanvas.Children.Add(enemy);
+
+                        enemies.Add(enemy); // Ajout à la liste pour gestion (animation/tir)
+
+                        // Optionnel : Ajouter l'ennemi aux obstacles pour ne pas marcher dessus
+                        // obstacleHitboxes.Add(newEnemyRect); 
+
+                        return; // Ennemi placé, on sort
                     }
                 }
+            }
+        }
 
-                // Si la place est libre
-                if (!collision)
+        private void UpdateEnemyAnimations(double deltaTime)
+        {
+            if (enemies.Count == 0) return;
+
+            enemyFrameTimer += deltaTime;
+
+            // Changer d'image toutes les 0.15 secondes (ajustez la vitesse ici)
+            if (enemyFrameTimer >= 0.15)
+            {
+                enemyFrameTimer = 0;
+                enemyCurrentFrame++;
+
+                // Boucler l'index (0, 1, 2, 3, 0, 1...)
+                int frameIndex = enemyCurrentFrame % enemyAnimImages.Count;
+                BitmapImage currentImage = enemyAnimImages[frameIndex];
+
+                // Mettre à jour tous les ennemis
+                foreach (Image enemy in enemies)
                 {
-                    Image newEnemy = new Image
-                    {
-                        Width = enemyWidth,
-                        Height = enemyHeight,
-                        Source = animEnemy[0],
-                        Stretch = Stretch.Uniform
-                    };
-
-                    Canvas.SetLeft(newEnemy, posX);
-                    Canvas.SetTop(newEnemy, posY);
-                    Panel.SetZIndex(newEnemy, 2); // Pour que l'ennemi soit au-dessus du sol
-
-                    mapCanvas.Children.Add(newEnemy);
-
-                    // animeEnemy.Add(newEnemy); 
-
-                    return;
+                    enemy.Source = currentImage;
                 }
             }
         }
@@ -668,7 +690,10 @@ namespace AstroShooter
         private void GenerateMap()
         {
             // 1. Initialisation
-            if (mapCanvas == null) mapCanvas = new Canvas();
+            if (mapCanvas == null)
+            {
+                mapCanvas = new Canvas();
+            }
             mapCanvas.Children.Clear();
             obstacleHitboxes.Clear();
 
@@ -781,6 +806,7 @@ namespace AstroShooter
                 AddMeteor();
             }
 
+            // 6. Ennemis
             for (int i = 0; i < INITIAL_ENEMY_COUNT; i++)
             {
                 AddEnemy();
