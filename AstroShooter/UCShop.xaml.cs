@@ -20,9 +20,16 @@ namespace AstroShooter
     /// </summary>
     public partial class UCShop : UserControl
     {
+
+        private BitmapImage bulletSpeedIcon = null!;
+        private BitmapImage lifeIcon = null!;
+        private BitmapImage speedIcon = null!;
         public UCShop()
         {
             InitializeComponent();
+            bulletSpeedIcon = new BitmapImage(new Uri("pack://application:,,,/asset/shop/bulletSpeedIcon.png"));
+            lifeIcon = new BitmapImage(new Uri("pack://application:,,,/asset/shop/lifeIcon.png"));
+            speedIcon = new BitmapImage(new Uri("pack://application:,,,/asset/shop/speedIcon.png"));
         }
 
         public EventHandler CloseShopRequested;
