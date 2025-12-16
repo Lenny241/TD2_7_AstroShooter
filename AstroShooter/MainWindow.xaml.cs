@@ -80,8 +80,8 @@ namespace AstroShooter
         private List<BitmapImage> animLeft = new List<BitmapImage>();
         private List<BitmapImage> animRight = new List<BitmapImage>();
 
-        private Image enemy = null!;
-        private BitmapImage enemyImage = null!;
+        private BitmapImage enemy = null!;
+        private List<BitmapImage> animEnemy = new List<BitmapImage>();
 
         private int currentFrame = 0;
         private double frameTimer = 0;         // Compteur de temps
@@ -116,10 +116,9 @@ namespace AstroShooter
                 animUp.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/character/up/characterUp_{i}.png")));
                 animLeft.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/character/left/characterLeft_{i}.png")));
                 animRight.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/character/right/characterRight_{i}.png")));
-                // Fais pareil pour Left et Right...
+                animEnemy.Add(new BitmapImage(new Uri($"pack://application:,,,/asset/enemy/enemy_{i}.png")));
             }
 
-            enemyImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/meteor.png"));
 
             meteorImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/asteroide.png"));
             tileImage = new BitmapImage(new Uri("pack://application:,,,/asset/ground/classicGroundTile1.png"));
@@ -267,19 +266,67 @@ namespace AstroShooter
 
         private void AddEnemy()
         {
-            enemy = new Image
-            {
-                Width = 50,
-                Height = 50,
-                Source = enemyImage,
-                Stretch = Stretch.Uniform // Pour garder les proportions
-            };
-            double posX = rnd.Next(0, MAP_SIZE * TILE_SIZE - (int)enemy.Width);
-            double posY = rnd.Next(0, MAP_SIZE * TILE_SIZE - (int)enemy.Height);
-            Canvas.SetLeft(enemy, posX);
-            Canvas.SetTop(enemy, posY);
-            mapCanvas.Children.Add(enemy);
+            int maxTries = 100; // Sécurité pour éviter une boucle infinie si la map est pleine
 
+            for (int tries = 0; tries < maxTries; tries++)
+            {
+                // 1. Choisir une case au hasard (en respectant les limites de la map)
+                int row = rnd.Next(3, MAP_SIZE - 3);
+                int col = rnd.Next(3, MAP_SIZE - 3);
+
+                // 2. Vérifier qu'on n'est pas dans la zone de départ (centre)
+                bool isCenter = (row >= CENTER_MIN && row <= CENTER_MAX && col >= CENTER_MIN && col <= CENTER_MAX);
+                if (isCenter) continue; // On recommence la boucle si on est au centre
+
+                // 3. Calculer la position pour centrer l'ennemi dans la case
+                double enemyWidth = 50;
+                double enemyHeight = 50;
+
+                // Formule pour centrer l'objet dans la tuile (TILE_SIZE)
+                double posX = (col * TILE_SIZE) + (TILE_SIZE - enemyWidth) / 2;
+                double posY = (row * TILE_SIZE) + (TILE_SIZE - enemyHeight) / 2;
+
+                // Créer une Hitbox temporaire pour tester la collision
+                Rect newEnemyRect = new Rect(
+                    posX, 
+                    posY, 
+                    enemyWidth, 
+                    enemyHeight
+                );
+
+                // 4. Vérifier la collision avec les obstacles existants (Rochers, Fusée, Météores)
+                bool collision = false;
+                foreach (Rect obstacle in obstacleHitboxes)
+                {
+                    if (obstacle.IntersectsWith(newEnemyRect))
+                    {
+                        collision = true;
+                        break;
+                    }
+                }
+
+                // Si la place est libre
+                if (!collision)
+                {
+                    Image newEnemy = new Image
+                    {
+                        Width = enemyWidth,
+                        Height = enemyHeight,
+                        Source = animEnemy[0],
+                        Stretch = Stretch.Uniform
+                    };
+
+                    Canvas.SetLeft(newEnemy, posX);
+                    Canvas.SetTop(newEnemy, posY);
+                    Panel.SetZIndex(newEnemy, 2); // Pour que l'ennemi soit au-dessus du sol
+
+                    mapCanvas.Children.Add(newEnemy);
+
+                    // animeEnemy.Add(newEnemy); 
+
+                    return;
+                }
+            }
         }
 
         // =====================
