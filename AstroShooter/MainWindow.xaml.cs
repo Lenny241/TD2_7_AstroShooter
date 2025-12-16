@@ -30,7 +30,7 @@ namespace AstroShooter
         private static readonly int CENTER_MAX = (MAP_SIZE / 2) + 1;
         private static readonly int MAP_LIMITE_LOW = 3;
         private static readonly int MAP_LIMITE_HIGH = MAP_SIZE - 3;
-        private static readonly ushort INITIAL_METEOR_COUNT = 6;
+        private static readonly ushort INITIAL_METEOR_COUNT = 10;
         private static readonly ushort INITIAL_ENEMY_COUNT = 5;
         private static ushort MAX_LIVES = 5;
         private static ushort NUGGETS_FOR_EXTRA_LIFE = 3;
@@ -40,10 +40,13 @@ namespace AstroShooter
         private static readonly double SHOOTCOOLDOWN_UPGRADE_AMOUNT = 0.05;
         private static readonly uint MAX_PLAYER_SPEED = 800;
 
+        private UCShop currentShop;
         private double timeSinceLastShoot = 0;
         double shootCooldown = 0.3;
         Random rnd = new Random();
         Rect RocketHitBox;
+
+        public int nbNuggets;
 
         private double move_speed = 500;
 
@@ -69,7 +72,6 @@ namespace AstroShooter
 
         private List<Rect> obstacleHitboxes = new();
 
-        private int nbNuggets = 0;
 
         private Canvas mapCanvas = null!;
         private double mapOffsetX = 0;
@@ -1024,15 +1026,15 @@ namespace AstroShooter
 
         public void ShowShopScreen()
         {
+            currentShop = new UCShop();
             music.Pause();
             gameTime.Stop();
             ScreenContainer.Children.Clear();
-            UCShop shop = new UCShop();
-            ScreenContainer.Children.Add(shop);
-            shop.CloseShopRequested += (s, e) => CloseShopScreen();
-            shop.ButLifeRequested += (s, e) => AddLife();
-            shop.ButShootCooldownRequested += (s, e) => ShootcooldownUpgrade();
-            shop.ButSpeedRequested += (s, e) => SpeedUpgrade();
+            ScreenContainer.Children.Add(currentShop);
+            currentShop.CloseShopRequested += (s, e) => CloseShopScreen();
+            currentShop.ButLifeRequested += (s, e) => AddLife();
+            currentShop.ButShootCooldownRequested += (s, e) => ShootcooldownUpgrade();
+            currentShop.ButSpeedRequested += (s, e) => SpeedUpgrade();
             Blur();
             isPaused = true;
         }
@@ -1094,7 +1096,6 @@ namespace AstroShooter
 
         private void Quit()
         {
-            //ScreenContainer.Children.Clear();
             StopGame();
         }
 

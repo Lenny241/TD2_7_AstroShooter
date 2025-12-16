@@ -21,6 +21,7 @@ namespace AstroShooter
     public partial class UCShop : UserControl
     {
 
+        private int currentNuggets;
         private BitmapImage bulletSpeedIcon = null!;
         private BitmapImage lifeIcon = null!;
         private BitmapImage speedIcon = null!;
@@ -32,10 +33,13 @@ namespace AstroShooter
             speedIcon = new BitmapImage(new Uri("pack://application:,,,/asset/shop/speedIcon.png"));
         }
 
+
         public EventHandler CloseShopRequested;
         public EventHandler ButLifeRequested;
         public EventHandler ButSpeedRequested;
         public EventHandler ButShootCooldownRequested;
+
+
 
         private void ButClose_Click(object sender, RoutedEventArgs e)
         {
@@ -43,6 +47,7 @@ namespace AstroShooter
             Console.WriteLine("ResumeRequested");
 #endif
             CloseShopRequested?.Invoke(this, EventArgs.Empty);
+
         }
 
         private void ButSpeed_Click(object sender, RoutedEventArgs e)

@@ -45,5 +45,10 @@ namespace AstroShooter
             Console.WriteLine("AffichageVolu");
 #endif
         }
+
+        private void ButQuit_Click(object sender, RoutedEventArgs e)
+        {
+            Application.Current.Shutdown();
+        }
     }
 }

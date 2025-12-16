@@ -24,7 +24,7 @@
             </Button.Background>
         </Button>
 
-        <Button x:Name="ButShootCooldown" Content="Shoot Cooldown" HorizontalAlignment="Center" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Top" BorderBrush="Black" Foreground="White" Margin="0,405,0,0" Click="ButShootCooldown_Click">
+        <Button x:Name="ButShootCooldown" Content="Shoot Cooldown" HorizontalAlignment="Center" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="120" Height="20" VerticalAlignment="Top" BorderBrush="Black" Foreground="White" Margin="0,405,0,0" Click="ButShootCooldown_Click">
             <Button.Background>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                     <GradientStop Color="Black"/>
@@ -51,5 +51,37 @@
         <Image Margin="414,462,929,354" Source="/asset/shop/speedIcon.png" Stretch="Fill" RenderTransformOrigin="0.771,-2.458"/>
         <Image Margin="942,463,399,354" Source="/asset/shop/lifeIcon.png" Stretch="Fill"/>
         <Image Margin="671,463,671,354" Source="/asset/shop/bulletSpeedIcon.png" Stretch="Fill" RenderTransformOrigin="-14.5,-2.5"/>
+        <TextBlock Panel.ZIndex="100" x:Name="Cost1" HorizontalAlignment="Left" Margin="362,344,0,0" TextWrapping="Wrap" Text="2 Interstellar Nuggets" VerticalAlignment="Top" FontFamily="Trebuchet MS" FontSize="14">
+            <TextBlock.Foreground>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#FF340EEE" Offset="1"/>
+                </LinearGradientBrush>
+            </TextBlock.Foreground>
+        </TextBlock>
+        <TextBlock Panel.ZIndex="100" x:Name="Cost2" HorizontalAlignment="Center" Margin="0,344,0,0" TextWrapping="Wrap" Text="2 Interstellar Nuggets" VerticalAlignment="Top" FontFamily="Trebuchet MS" FontSize="14">
+            <TextBlock.Foreground>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#FF340EEE" Offset="1"/>
+                </LinearGradientBrush>
+            </TextBlock.Foreground>
+        </TextBlock>
+        <TextBlock Panel.ZIndex="100" x:Name="Cost3" HorizontalAlignment="Left" Margin="891,344,0,0" TextWrapping="Wrap" Text="3 Interstellar Nuggets" VerticalAlignment="Top" FontFamily="Trebuchet MS" FontSize="14">
+            <TextBlock.Foreground>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#FF340EEE" Offset="1"/>
+                </LinearGradientBrush>
+            </TextBlock.Foreground>
+        </TextBlock>
+        <TextBlock Panel.ZIndex="100" x:Name="Cost" HorizontalAlignment="Left" Margin="231,344,0,0" TextWrapping="Wrap" Text="Cost :" VerticalAlignment="Top" FontFamily="Trebuchet MS" FontSize="14" RenderTransformOrigin="0.11,0.646">
+            <TextBlock.Foreground>
+                <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                    <GradientStop Color="Black"/>
+                    <GradientStop Color="#FF340EEE" Offset="1"/>
+                </LinearGradientBrush>
+            </TextBlock.Foreground>
+        </TextBlock>
     </Grid>
 </UserControl>

@@ -10,7 +10,7 @@
         KeyUp="Window_KeyUp"
         Focusable="True"
         SizeToContent="WidthAndHeight"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen" WindowStyle="None">
 
     <Grid x:Name="gridMain" Height="850" Width="1375">
 
@@ -31,10 +31,7 @@
                     </LinearGradientBrush>
                 </TextBlock.Foreground>
             </TextBlock>
-
-
         </Canvas>
-        
     </Grid>
 
 </Window>
