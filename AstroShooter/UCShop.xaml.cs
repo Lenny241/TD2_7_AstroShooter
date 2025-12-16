@@ -33,6 +33,9 @@ namespace AstroShooter
         }
 
         public EventHandler CloseShopRequested;
+        public EventHandler ButLifeRequested;
+        public EventHandler ButSpeedRequested;
+        public EventHandler ButShootCooldownRequested;
 
         private void ButClose_Click(object sender, RoutedEventArgs e)
         {
@@ -40,6 +43,30 @@ namespace AstroShooter
             Console.WriteLine("ResumeRequested");
 #endif
             CloseShopRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void ButSpeed_Click(object sender, RoutedEventArgs e)
+        {
+#if DEBUG
+            Console.WriteLine("ButSpeed clicked");
+#endif
+            ButSpeedRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void ButShootCooldown_Click(object sender, RoutedEventArgs e)
+        {
+#if DEBUG
+            Console.WriteLine("ButShootCooldown clicked");
+#endif
+            ButShootCooldownRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        private void ButLife_Click(object sender, RoutedEventArgs e)
+        {
+#if DEBUG
+            Console.WriteLine("ButLife clicked");
+#endif
+            ButLifeRequested?.Invoke(this, EventArgs.Empty);
         }
     }
 }

@@ -25,20 +25,26 @@ namespace AstroShooter
     {
         private static readonly ushort MAP_SIZE = 26;
         private static readonly ushort TILE_SIZE = 275;
-        private static readonly double MOVE_SPEED = 900;
         private static readonly double BULLET_SPEED = 600;
         private static readonly int CENTER_MIN = (MAP_SIZE / 2) - 1;
         private static readonly int CENTER_MAX = (MAP_SIZE / 2) + 1;
         private static readonly int MAP_LIMITE_LOW = 3;
         private static readonly int MAP_LIMITE_HIGH = MAP_SIZE - 3;
-        public static readonly ushort INITIAL_METEOR_COUNT = 6;
-        public static readonly ushort INITIAL_ENEMY_COUNT = 5;
-        public static ushort MAX_LIVES = 5;
+        private static readonly ushort INITIAL_METEOR_COUNT = 6;
+        private static readonly ushort INITIAL_ENEMY_COUNT = 5;
+        private static ushort MAX_LIVES = 5;
+        private static ushort NUGGETS_FOR_EXTRA_LIFE = 3;
+        private static readonly ushort NUGGETS_FOR_SPEED_UPGRADE = 2;
+        private static readonly ushort NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE = 2;
+        private static readonly ushort SPEED_UPGRADE_AMOUNT = 50;
+        private static readonly double SHOOTCOOLDOWN_UPGRADE_AMOUNT = 0.05;
 
         private double timeSinceLastShoot = 0;
         double shootCooldown = 0.3;
         Random rnd = new Random();
         Rect RocketHitBox;
+
+        private double move_speed = 500;
 
         private List<Image> lives = new();
         private int currentLives = 3;
@@ -333,6 +339,18 @@ namespace AstroShooter
         // PLAYER
         // =====================
 
+        private void SpeedUpgrade()
+        {
+            if(nbNuggets>=NUGGETS_FOR_SPEED_UPGRADE)
+            {
+                move_speed += SPEED_UPGRADE_AMOUNT;
+                nbNuggets -= (int)NUGGETS_FOR_SPEED_UPGRADE;
+#if DEBUG
+                Console.WriteLine("Speed upgrated");
+#endif
+            }
+        }
+
         private void lifedisplay()
         {
             foreach (Image life in lives)
@@ -358,7 +376,7 @@ namespace AstroShooter
 
         private void AddLife()
         {
-            if (currentLives < MAX_LIVES)
+            if ((currentLives < MAX_LIVES) && (nbNuggets >= NUGGETS_FOR_EXTRA_LIFE))
             {
 #if DEBUG
                 Console.WriteLine("Adding life");
@@ -375,6 +393,7 @@ namespace AstroShooter
                 GameCanvas.Children.Add(lifeIcon);
                 lives.Add(lifeIcon);
                 currentLives++;
+                nbNuggets -= (int)NUGGETS_FOR_EXTRA_LIFE;
             }
         }
 
@@ -469,7 +488,7 @@ namespace AstroShooter
                 double playerScreenY = Canvas.GetTop(player);
 
                 // TEST AXE X 
-                double proposedMapOffsetX = mapOffsetX + (deltaX * MOVE_SPEED * deltaTime);
+                double proposedMapOffsetX = mapOffsetX + (deltaX * move_speed * deltaTime);
 
                 // Calcul de la position du joueur DANS LE MONDE
                 // Formule : PositionJoueurMonde = PositionJoueurEcran - PositionCarteEcran
@@ -484,7 +503,7 @@ namespace AstroShooter
                 }
 
                 // TEST AXE Y
-                double proposedMapOffsetY = mapOffsetY + (deltaY * MOVE_SPEED * deltaTime);
+                double proposedMapOffsetY = mapOffsetY + (deltaY * move_speed * deltaTime);
 
                 // On recalcule avec la potentielle nouvelle position X validée juste avant
                 double playerWorldX_Current = playerScreenX - mapOffsetX;
@@ -548,7 +567,17 @@ namespace AstroShooter
         // =====================
         // BULLETS
         // =====================
-
+        private void ShootcooldownUpgrade()
+        {
+            if ((shootCooldown > 0.1) && (nbNuggets>=NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE))
+            {
+                shootCooldown -= SHOOTCOOLDOWN_UPGRADE_AMOUNT;
+                nbNuggets -= (int)NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE;
+#if DEBUG
+                Console.WriteLine("Shootcooldown improved");
+#endif
+            }
+        }
         private void ShootBullet(Point Target)
         {
             double playerCenterX = Canvas.GetLeft(player) - mapOffsetX + player.Width / 2;
@@ -889,8 +918,11 @@ namespace AstroShooter
             gameTime.Stop();
             ScreenContainer.Children.Clear();
             UCShop shop = new UCShop();
-            shop.CloseShopRequested += (s, e) => CloseShopScreen();
             ScreenContainer.Children.Add(shop);
+            shop.CloseShopRequested += (s, e) => CloseShopScreen();
+            shop.ButLifeRequested += (s, e) => AddLife();
+            shop.ButShootCooldownRequested += (s, e) => ShootcooldownUpgrade();
+            shop.ButSpeedRequested += (s, e) => SpeedUpgrade();
             Blur();
             isPaused = true;
         }
