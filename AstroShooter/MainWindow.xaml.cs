@@ -73,6 +73,9 @@ namespace AstroShooter
         private TimeSpan lastFrameTime;
 
         private Image player = null!;
+        private static readonly double PLAYER_WIDTH = 50;
+        private static readonly double PLAYER_HEIGHT = 90;
+
         private List<BitmapImage> animUp = new List<BitmapImage>();
         private List<BitmapImage> animDown = new List<BitmapImage>();
         private List<BitmapImage> animLeft = new List<BitmapImage>();
@@ -80,6 +83,8 @@ namespace AstroShooter
 
         private List<BitmapImage> enemyAnimImages = new List<BitmapImage>(); // Stocke les 4 sprites
         private List<Image> enemies = new List<Image>();
+        private static readonly double ENEMY_WIDTH = 50;
+        private static readonly double ENEMY_HEIGHT = 90;
 
         private double enemyFrameTimer = 0;   // Timer spécifique aux ennemis
         private int enemyCurrentFrame = 0;    // Compteur d'image spécifique aux ennemis
@@ -271,59 +276,82 @@ namespace AstroShooter
 
         public void AddEnemy()
         {
-            int maxTries = 100;
-            for (int tries = 0; tries < maxTries; tries++)
+            // liste pour noter les coordonnées (Col, Row) libres
+            List<Point> freeSpots = new List<Point>();
+
+            for (int row = 3; row < MAP_SIZE - 3; row++)
             {
-                // Position aléatoire sur la grille
-                int row = rnd.Next(3, MAP_SIZE - 3);
-                int col = rnd.Next(3, MAP_SIZE - 3);
-
-                double enemyLeft = col * TILE_SIZE + rnd.Next(0, 50); // Petit décalage aléatoire
-                double enemyTop = row * TILE_SIZE + rnd.Next(0, 50);
-
-                // Vérifier qu'on n'est pas dans la zone centrale (spawn joueur)
-                bool estCentre = (row >= CENTER_MIN && row <= CENTER_MAX && col >= CENTER_MIN && col <= CENTER_MAX);
-
-                // Création d'une hitbox temporaire pour tester la collision
-                Rect newEnemyRect = new Rect(enemyLeft, enemyTop, 50, 90); // Taille arbitraire (50x90 comme le joueur)
-
-                if (!estCentre)
+                for (int col = 3; col < MAP_SIZE - 3; col++)
                 {
+                    // A. Vérifier si c'est la zone centrale (Spawn joueur)
+                    bool estCentre = (row >= CENTER_MIN && row <= CENTER_MAX &&
+                                      col >= CENTER_MIN && col <= CENTER_MAX);
+
+                    if (estCentre) continue; // On passe à la case suivante
+
+                    // B. Vérifier si cette case touche un obstacle existant
+                    // On crée un rectangle théorique à cet emplacement
+                    Rect potentialRect = new Rect(col * TILE_SIZE, row * TILE_SIZE, 50, 90);
+
                     bool collision = false;
                     foreach (Rect obstacle in obstacleHitboxes)
                     {
-                        if (obstacle.IntersectsWith(newEnemyRect))
+                        if (obstacle.IntersectsWith(potentialRect))
                         {
                             collision = true;
                             break;
                         }
                     }
 
-                    // Si l'endroit est libre, on crée l'ennemi
+                    // C. Si pas de collision, c'est une place valide ! On l'ajoute à la liste.
                     if (!collision)
                     {
-                        Image enemy = new Image
-                        {
-                            Source = enemyAnimImages[0], // Première image de l'animation
-                            Width = 50,  // Ajustez selon la taille de votre sprite
-                            Height = 90,
-                            Stretch = Stretch.Uniform
-                        };
-
-                        Canvas.SetLeft(enemy, enemyLeft);
-                        Canvas.SetTop(enemy, enemyTop);
-                        Panel.SetZIndex(enemy, 2); // Au même niveau ou au-dessus du joueur
-
-                        mapCanvas.Children.Add(enemy);
-
-                        enemies.Add(enemy); // Ajout à la liste pour gestion (animation/tir)
-
-                        // Optionnel : Ajouter l'ennemi aux obstacles pour ne pas marcher dessus
-                        // obstacleHitboxes.Add(newEnemyRect); 
-
-                        return; // Ennemi placé, on sort
+                        freeSpots.Add(new Point(col, row));
                     }
                 }
+            }
+
+            // 3. Vérification finale : Est-ce qu'il reste de la place ?
+            if (freeSpots.Count > 0)
+            {
+                // On pioche une case au hasard DANS la liste des cases libres
+                int index = rnd.Next(freeSpots.Count);
+                Point selectedSpot = freeSpots[index];
+
+                // On calcule la position finale en pixels
+                // (J'ai gardé votre petit décalage aléatoire +0-50 pour le style)
+                double enemyLeft = selectedSpot.X * TILE_SIZE + rnd.Next(0, 50);
+                double enemyTop = selectedSpot.Y * TILE_SIZE + rnd.Next(0, 50);
+
+                // --- Création visuelle de l'ennemi (votre code original) ---
+                Image enemy = new Image
+                {
+                    Source = enemyAnimImages[0],
+                    Width = 50,
+                    Height = 90,
+                    Stretch = Stretch.Uniform
+                };
+
+                Canvas.SetLeft(enemy, enemyLeft);
+                Canvas.SetTop(enemy, enemyTop);
+                Panel.SetZIndex(enemy, 2);
+
+                mapCanvas.Children.Add(enemy);
+                enemies.Add(enemy);
+
+                // Optionnel : Ajouter la hitbox de l'ennemi aux obstacles pour éviter
+                // que le prochain ennemi apparaisse EXACTEMENT sur celui-ci
+                // obstacleHitboxes.Add(new Rect(enemyLeft, enemyTop, 50, 90));
+
+#if DEBUG
+                Console.WriteLine($"Ennemi ajouté en : {selectedSpot.X}, {selectedSpot.Y}");
+#endif
+            }
+            else
+            {
+#if DEBUG
+                Console.WriteLine("Carte pleine ! Impossible d'ajouter un ennemi.");
+#endif
             }
         }
 
@@ -431,8 +459,8 @@ namespace AstroShooter
             // On remplace le Rectangle par une Image
             player = new Image
             {
-                Width = 50,
-                Height = 90,
+                Width = PLAYER_WIDTH,
+                Height = PLAYER_HEIGHT,
                 Source = animDown[0],
                 Stretch = Stretch.Uniform // Pour garder les proportions
             };
@@ -860,48 +888,91 @@ namespace AstroShooter
 
         public void AddMeteor()
         {
-            int maxTries = 100;
-            for (int tries = 0; tries < maxTries; tries++)
+            // 1. Liste des places libres
+            List<Point> freeSpots = new List<Point>();
+
+            // 2. Scan de la carte
+            for (int row = 3; row < MAP_SIZE - 3; row++)
             {
-                int row = rnd.Next(3, MAP_SIZE - 3);
-                int col = rnd.Next(3, MAP_SIZE - 3);
+                for (int col = 3; col < MAP_SIZE - 3; col++)
+                {
+                    // A. Vérification Centre (Spawn joueur)
+                    bool estCentre = (row >= CENTER_MIN && row <= CENTER_MAX &&
+                                      col >= CENTER_MIN && col <= CENTER_MAX);
 
-                double metLeft = col * TILE_SIZE + rnd.Next(-20, 20);
-                double metTop = row * TILE_SIZE + rnd.Next(-20, 20);
+                    if (estCentre) continue;
 
-                bool escentre = (row >= CENTER_MIN && row <= CENTER_MAX && col >= CENTER_MIN && col <= CENTER_MAX);
+                    // B. Vérification Collision avec Obstacles existants
+                    Rect potentialRect = new Rect(
+                        col * TILE_SIZE, row * TILE_SIZE, TILE_SIZE, TILE_SIZE);
 
-                Rect newMeteorRect = new Rect(metLeft, metTop, TILE_SIZE, TILE_SIZE);
-
-                if (!escentre) { 
                     bool collision = false;
-                    for (int i = 0; i < obstacleHitboxes.Count; i++)
+                    foreach (Rect obstacle in obstacleHitboxes)
                     {
-                        if (obstacleHitboxes[i].IntersectsWith(newMeteorRect))
+                        if (obstacle.IntersectsWith(potentialRect))
                         {
                             collision = true;
                             break;
                         }
                     }
 
+                    // C. Si libre, on ajoute à la liste
                     if (!collision)
                     {
-                        Image meteor = new Image
-                        {
-                            Source = meteorImage,
-                            Width = TILE_SIZE,
-                            Height = TILE_SIZE
-                        };
-
-                        Canvas.SetLeft(meteor, metLeft);
-                        Canvas.SetTop(meteor, metTop);
-                        Panel.SetZIndex(meteor, 1);
-                        mapCanvas.Children.Add(meteor);
-                        meteors.Add(meteor);
-                        obstacleHitboxes.Add(newMeteorRect);
-                        return;
+                        freeSpots.Add(new Point(col, row));
                     }
                 }
+            }
+
+            // 3. Choix et Placement
+            if (freeSpots.Count > 0)
+            {
+                // Choix aléatoire parmi les places valides
+                int index = rnd.Next(freeSpots.Count);
+                Point selectedSpot = freeSpots[index];
+
+                double metLeft = selectedSpot.X * TILE_SIZE + rnd.Next(-20, 20);
+                double metTop = selectedSpot.Y * TILE_SIZE + rnd.Next(-20, 20);
+
+                Rect newMeteorRect = new Rect(metLeft, metTop, TILE_SIZE, TILE_SIZE);
+
+                // Double vérification de sécurité (optionnelle mais recommandée à cause du rnd décalage)
+                // Le décalage aléatoire pourrait théoriquement pousser le météore sur un obstacle voisin
+                bool collisionFinale = false;
+                foreach (var obs in obstacleHitboxes)
+                {
+                    if (obs.IntersectsWith(newMeteorRect)) { collisionFinale = true; break; }
+                }
+
+                if (!collisionFinale)
+                {
+                    // --- Création Visuelle ---
+                    Image meteor = new Image
+                    {
+                        Source = meteorImage,
+                        Width = TILE_SIZE,
+                        Height = TILE_SIZE
+                    };
+
+                    Canvas.SetLeft(meteor, metLeft);
+                    Canvas.SetTop(meteor, metTop);
+                    Panel.SetZIndex(meteor, 1);
+
+                    mapCanvas.Children.Add(meteor);
+                    meteors.Add(meteor);
+
+                    obstacleHitboxes.Add(newMeteorRect);
+
+#if DEBUG
+                    Console.WriteLine($"Météore ajouté en : {selectedSpot.X}, {selectedSpot.Y}");
+#endif
+                }
+            }
+            else
+            {
+#if DEBUG
+                Console.WriteLine("Pas de place pour un météore supplémentaire.");
+#endif
             }
         }
 
