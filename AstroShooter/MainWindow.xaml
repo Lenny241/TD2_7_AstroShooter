@@ -23,10 +23,18 @@
             <Canvas.Effect>
                 <BlurEffect RenderingBias="Quality" Radius="10"/>
             </Canvas.Effect>
-            <TextBlock x:Name="NuggetCount" HorizontalAlignment="Left" Margin="42,786,0,0" TextWrapping="Wrap" Text="Test" VerticalAlignment="Top"/>
+            <TextBlock Panel.ZIndex="100" x:Name="InterstellarNuggetsCount" HorizontalAlignment="Left" Margin="42,786,0,0" TextWrapping="Wrap" Text="Interstellar Nuggets : 0" VerticalAlignment="Top" FontFamily="Trebuchet MS" FontSize="20">
+                <TextBlock.Foreground>
+                    <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+                        <GradientStop Color="Black"/>
+                        <GradientStop Color="#FF340EEE" Offset="1"/>
+                    </LinearGradientBrush>
+                </TextBlock.Foreground>
+            </TextBlock>
+
 
         </Canvas>
-
+        
     </Grid>
 
 </Window>

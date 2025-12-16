@@ -38,6 +38,7 @@ namespace AstroShooter
         private static readonly ushort NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE = 2;
         private static readonly ushort SPEED_UPGRADE_AMOUNT = 50;
         private static readonly double SHOOTCOOLDOWN_UPGRADE_AMOUNT = 0.05;
+        private static readonly uint MAX_PLAYER_SPEED = 800;
 
         private double timeSinceLastShoot = 0;
         double shootCooldown = 0.3;
@@ -156,17 +157,22 @@ namespace AstroShooter
 #if DEBUG
             Console.WriteLine("StartGame");
 #endif
+            VariablesInitialisation();
             ScreenContainer.Children.Clear();
             GameCanvas.Effect = null;
-
             isPlaying = true;
             isPaused = false;
-            currentLives = 3;
             lifedisplay();
-            nbNuggets = 0;
-            nuggetsDisplay();
+            nuggetsDisplay(); 
         }
 
+        public void VariablesInitialisation()
+        {
+            move_speed = 500;
+            shootCooldown = 0.3;
+            currentLives = 3;
+            nbNuggets = 0;
+        }
         public void ResumeGame()
         {
             if (!isPaused)
@@ -199,10 +205,11 @@ namespace AstroShooter
 
         private void StopGame()
         {
+            GameCanvas.Children.Remove(player);
             isPlaying = false;
             isPaused = false;
             gameTime.Stop();
-            GameCanvas.Children.Clear();
+            //GameCanvas.Children.Clear();
             bullets.Clear();
             directions.Clear();
             obstacleHitboxes.Clear();
@@ -212,6 +219,7 @@ namespace AstroShooter
             CenterMapOnPlayer();
             music.Stop();
             music.Play();
+            ShowStartScreen();
         }
 
         // =====================
@@ -391,10 +399,11 @@ namespace AstroShooter
 
         private void SpeedUpgrade()
         {
-            if(nbNuggets>=NUGGETS_FOR_SPEED_UPGRADE)
+            if((nbNuggets>=NUGGETS_FOR_SPEED_UPGRADE) && (move_speed<=MAX_PLAYER_SPEED))
             {
                 move_speed += SPEED_UPGRADE_AMOUNT;
                 nbNuggets -= (int)NUGGETS_FOR_SPEED_UPGRADE;
+                nuggetsDisplay();
 #if DEBUG
                 Console.WriteLine("Speed upgrated");
 #endif
@@ -444,6 +453,7 @@ namespace AstroShooter
                 lives.Add(lifeIcon);
                 currentLives++;
                 nbNuggets -= (int)NUGGETS_FOR_EXTRA_LIFE;
+                nuggetsDisplay();
             }
         }
 
@@ -472,6 +482,7 @@ namespace AstroShooter
         private void AddNugget()
         {
             nbNuggets++;
+            nuggetsDisplay();
         }
         private void CreatePlayer()
         {
@@ -619,10 +630,11 @@ namespace AstroShooter
         // =====================
         private void ShootcooldownUpgrade()
         {
-            if ((shootCooldown > 0.1) && (nbNuggets>=NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE))
+            if ((shootCooldown > 0.2) && (nbNuggets>=NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE))
             {
                 shootCooldown -= SHOOTCOOLDOWN_UPGRADE_AMOUNT;
                 nbNuggets -= (int)NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE;
+                nuggetsDisplay();
 #if DEBUG
                 Console.WriteLine("Shootcooldown improved");
 #endif
@@ -908,6 +920,7 @@ namespace AstroShooter
                     meteors.Remove(meteor);
                     obstacleHitboxes.Remove(meteorHitbox);
                     AddNugget();
+                    AddMeteor();
 #if DEBUG
                     Console.WriteLine("Meteor clicked");
 #endif
@@ -1081,6 +1094,7 @@ namespace AstroShooter
 
         private void Quit()
         {
+            //ScreenContainer.Children.Clear();
             StopGame();
         }
 
@@ -1097,7 +1111,7 @@ namespace AstroShooter
 
         private void nuggetsDisplay()
         {
-            NuggetCount.Text = "Nuggets: " + nbNuggets;
+            InterstellarNuggetsCount.Text = "Interstellar Nuggets : " + nbNuggets;
         }
 
         // =====================
