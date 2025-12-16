@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:AstroShooter"
         mc:Ignorable="d"
-        Title="Volume" Height="450" Width="800">
+        Title="Volume" Height="450" Width="800" WindowStyle="None">
     <Grid x:Name="GridVolume" Background="#FF89CFD8">
         <Label x:Name="labParameter" Content="Parameters" HorizontalAlignment="Center" Margin="0,75,0,0" VerticalAlignment="Top" FontSize="30" FontFamily="72 Black">
             <Label.Foreground>
