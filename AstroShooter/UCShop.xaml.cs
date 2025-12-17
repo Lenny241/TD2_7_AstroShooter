@@ -20,8 +20,6 @@ namespace AstroShooter
     /// </summary>
     public partial class UCShop : UserControl
     {
-
-        private int currentNuggets;
         private BitmapImage bulletSpeedIcon = null!;
         private BitmapImage lifeIcon = null!;
         private BitmapImage speedIcon = null!;

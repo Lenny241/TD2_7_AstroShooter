@@ -25,37 +25,32 @@ namespace AstroShooter
     {
         private static readonly ushort MAP_SIZE = 26;
         private static readonly ushort TILE_SIZE = 275;
-        private static readonly double BULLET_SPEED = 600;
+
         private static readonly int CENTER_MIN = (MAP_SIZE / 2) - 1;
         private static readonly int CENTER_MAX = (MAP_SIZE / 2) + 1;
         private static readonly int MAP_LIMITE_LOW = 3;
         private static readonly int MAP_LIMITE_HIGH = MAP_SIZE - 3;
         private static readonly ushort INITIAL_METEOR_COUNT = 10;
         private static readonly ushort INITIAL_ENEMY_COUNT = 5;
-        private static ushort MAX_LIVES = 5;
+
         private static ushort NUGGETS_FOR_EXTRA_LIFE = 3;
         private static readonly ushort NUGGETS_FOR_SPEED_UPGRADE = 2;
         private static readonly ushort NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE = 2;
+
         private static readonly ushort SPEED_UPGRADE_AMOUNT = 50;
         private static readonly double SHOOTCOOLDOWN_UPGRADE_AMOUNT = 0.05;
         private static readonly uint MAX_PLAYER_SPEED = 800;
+        private static ushort MAX_LIVES = 5;
         private static readonly uint MAX_ENEMIES = 50;
-        private static readonly double INVINCIBILITY_DURATION = 2.0; // Durée d'invincibilité en secondes
-        private bool isInvincible = false;
-        private double invincibilityTimer = 0;
 
-        private double timeSinceLastShoot = 0;
-        private double shootCooldown = 0.3;
-        Random rnd = new Random();
-        Rect RocketHitBox;
+        private static readonly double BULLET_SPEED = 800;
+        private static readonly double INVINCIBILITY_DURATION = 2.0;
 
-        public int nbNuggets;
+        private static readonly double PLAYER_WIDTH = 50;
+        private static readonly double PLAYER_HEIGHT = 90;
 
-        private double playerSpeed = 500;
-        private double enemySpeed = 100; // Vitesse de déplacement des ennemis
-
-        private List<Image> lives = new();
-        private int currentLives = 3;
+        private static readonly double ENEMY_WIDTH = 50;
+        private static readonly double ENEMY_HEIGHT = 90;
 
         private static readonly MediaPlayer music = new MediaPlayer();
         public static void PlayMusic() => music.Play();
@@ -63,6 +58,25 @@ namespace AstroShooter
         public static void PauseMusic() => music.Pause();
         public static void SetMusicVolume(double volume) => music.Volume = volume;
         public static double GetMusicVolume() => music.Volume;
+
+        Random rnd = new Random();
+
+        private bool isInvincible = false;
+        private double invincibilityTimer = 0;
+
+        private double timeSinceLastShoot = 0;
+        private double shootCooldown = 0.3;
+
+        Rect RocketHitBox;
+        public int nbNuggets;
+
+        private double playerSpeed = 500;
+        private double enemySpeed = 100;
+
+        private List<Image> lives = new();
+        private int currentLives = 3;
+
+
 
         private bool isPaused = false;
         private bool isPlaying = false;
@@ -72,7 +86,7 @@ namespace AstroShooter
         private List<double> bulletWorldY = new();
         private List<Vector> directions = new();
 
-        private List<Image> meteors = new();
+        private List<Image> asteroid = new();
         private List<Rect> obstacleHitboxes = new();
 
         private Canvas mapCanvas = null!;
@@ -84,23 +98,20 @@ namespace AstroShooter
         private TimeSpan lastFrameTime;
 
         private Image player = null!;
-        private static readonly double PLAYER_WIDTH = 50;
-        private static readonly double PLAYER_HEIGHT = 90;
 
         private List<BitmapImage> animUp = new List<BitmapImage>();
         private List<BitmapImage> animDown = new List<BitmapImage>();
         private List<BitmapImage> animLeft = new List<BitmapImage>();
         private List<BitmapImage> animRight = new List<BitmapImage>();
 
-        private List<BitmapImage> enemyAnimImages = new List<BitmapImage>(); // Stocke les 4 sprites
+        private List<BitmapImage> enemyAnimImages = new List<BitmapImage>();
         private List<Image> enemies = new List<Image>();
+        private readonly List<Image> enemiesToRemove = new();
         private BitmapImage enemyDeadImage = null!;
         private HashSet<Image> deadEnemies = new HashSet<Image>(); // Ennemis en état "mort"
-        private static readonly double ENEMY_WIDTH = 50;
-        private static readonly double ENEMY_HEIGHT = 90;
 
-        private double enemyFrameTimer = 0;   // Timer spécifique aux ennemis
-        private int enemyCurrentFrame = 0;    // Compteur d'image spécifique aux ennemis
+        private double enemyFrameTimer = 0;
+        private int enemyCurrentFrame = 0;
 
         private int currentFrame = 0;
         private double frameTimer = 0;         // Compteur de temps
@@ -114,9 +125,9 @@ namespace AstroShooter
         private BitmapImage rocketImage = null!;
         private BitmapImage lifeIconImage = null!;
 
-        // =====================
-        // GAME STATE
-        // =====================
+        // ===================================================================================================================================================
+        //                                                                          GAME STATE
+        // ===================================================================================================================================================
 
         public MainWindow()
         {
@@ -218,7 +229,7 @@ namespace AstroShooter
             isPlaying = false;
             isPaused = false;
             gameTime.Stop();
-            //GameCanvas.Children.Clear();
+            GameCanvas.Children.Clear();
             bullets.Clear();
             directions.Clear();
             obstacleHitboxes.Clear();
@@ -230,662 +241,9 @@ namespace AstroShooter
             music.Stop();
             music.Play();
         }
-
-        // =====================
-        // INPUT
-        // =====================
-
-        private void Window_KeyDown(object sender, KeyEventArgs e)
-        {
-            pressedKeys.Add(e.Key);
-            if (isPlaying == false)
-            {
-                return;
-            }
-            if (e.Key == Key.Escape)
-            {
-                if (!isPaused)
-                {
-                    ShowPauseMenu();
-                }
-                else
-                {
-                    ResumeGame();
-                }
-            }
-        }
-        private void Window_KeyUp(object sender, KeyEventArgs e)
-        {
-            pressedKeys.Remove(e.Key);
-        }
-
-        // =====================
-        // GAME LOOP
-        // =====================
-        private double CalculateDeltaTime()
-        {
-            // Calculer le delta time pour un mouvement indépendant du framerate
-            TimeSpan currentTime = gameTime.Elapsed;
-            double deltaTime = (currentTime - lastFrameTime).TotalSeconds;
-            lastFrameTime = currentTime;
-            return deltaTime;
-        }
-
-        private void GameLoop(object? sender, EventArgs e)
-        {
-            double deltaTime = CalculateDeltaTime();
-            if (isPlaying && !isPaused)
-            {
-                MovePlayer(deltaTime);
-                UpdatePlayerAnimation(deltaTime);
-                UpdateEnemyAnimations(deltaTime);
-                MoveEnemies(deltaTime);           // Ajout : déplacement des ennemis
-                UpdateInvincibility(deltaTime);   // Ajout : gestion de l'invincibilité
-                MoveBullets(deltaTime);
-                UpdateDisplay();
-                timeSinceLastShoot += deltaTime;
-                if (pressedKeys.Contains(Key.Space))
-                {
-                    if (timeSinceLastShoot >= shootCooldown)
-                    {
-                        ShootBullet(Mouse.GetPosition(GameCanvas));
-                        timeSinceLastShoot = 0;
-                    }
-                }
-            }
-        }
-
-        // =====================
-        // ENEMIES
-        // =====================
-
-        private async void KillEnemy(Image enemy)
-        {
-            // Retirer de la liste des ennemis actifs
-            enemies.Remove(enemy);
-
-            // Ajouter aux ennemis morts
-            deadEnemies.Add(enemy);
-
-            // Afficher le sprite "dead"
-            enemy.Source = enemyDeadImage;
-
-#if DEBUG
-            Console.WriteLine("Ennemi tué !");
-#endif
-
-            // Attendre 3 secondes puis supprimer
-            await Task.Delay(3000);
-
-            // Vérifier que l'ennemi existe toujours (au cas où la partie s'est arrêtée)
-            if (deadEnemies.Contains(enemy))
-            {
-                deadEnemies.Remove(enemy);
-                mapCanvas.Children.Remove(enemy);
-            }
-
-            int newEnemyCount = rnd.Next(1, 3); // 1 ou 2 nouveaux ennemis
-            for (int i = 0; i < newEnemyCount; i++)
-            {
-                if (enemies.Count < MAX_ENEMIES)
-                {
-                    AddEnemy();
-                }
-                else
-                {
-                    enemySpeed += 20; // Augmente légèrement la vitesse des ennemis existants
-#if DEBUG
-                    Console.WriteLine("Nombre maximum d'ennemis atteint, impossible d'en ajouter plus.");
-#endif
-                }
-            }
-        }
-
-        private void MoveEnemies(double deltaTime)
-        {
-            // Position du joueur dans le monde
-            double playerScreenX = Canvas.GetLeft(player);
-            double playerScreenY = Canvas.GetTop(player);
-            double playerWorldX = playerScreenX - mapOffsetX;
-            double playerWorldY = playerScreenY - mapOffsetY;
-
-            // Hitbox du joueur
-            Rect playerRect = new Rect(playerWorldX, playerWorldY, player.Width, player.Height);
-
-            for (int i = enemies.Count - 1; i >= 0; i--)
-            {
-                Image enemy = enemies[i];
-
-                double enemyX = Canvas.GetLeft(enemy);
-                double enemyY = Canvas.GetTop(enemy);
-
-                // Calculer la direction vers le joueur
-                double dirX = playerWorldX - enemyX;
-                double dirY = playerWorldY - enemyY;
-
-                // Normaliser le vecteur direction
-                double length = Math.Sqrt(dirX * dirX + dirY * dirY);
-                if (length > 0)
-                {
-                    dirX /= length;
-                    dirY /= length;
-                }
-
-                // Nouvelle position proposée
-                double newX = enemyX + dirX * enemySpeed * deltaTime;
-                double newY = enemyY + dirY * enemySpeed * deltaTime;
-
-                // Vérifier collision avec les obstacles
-                Rect enemyRectX = new Rect(newX, enemyY, enemy.Width, enemy.Height);
-                Rect enemyRectY = new Rect(enemyX, newY, enemy.Width, enemy.Height);
-
-                bool canMoveX = !CheckCollision(enemyRectX);
-                bool canMoveY = !CheckCollision(enemyRectY);
-
-                if (canMoveX)
-                {
-                    Canvas.SetLeft(enemy, newX);
-                    enemyX = newX;
-                }
-                if (canMoveY)
-                {
-                    Canvas.SetTop(enemy, newY);
-                    enemyY = newY;
-                }
-
-                // Vérifier collision avec le joueur
-                Rect enemyRect = new Rect(enemyX, enemyY, enemy.Width, enemy.Height);
-                if (enemyRect.IntersectsWith(playerRect))
-                {
-                    OnPlayerHit();
-                }
-            }
-        }
-
-        private void OnPlayerHit()
-        {
-            if (isInvincible) return;
-
-            RemoveLife();
-            StartInvincibility();
-
-#if DEBUG
-            Console.WriteLine("Joueur touché par un ennemi !");
-#endif
-        }
-
-        private void StartInvincibility()
-        {
-            isInvincible = true;
-            invincibilityTimer = INVINCIBILITY_DURATION;
-        }
-
-        private void UpdateInvincibility(double deltaTime)
-        {
-            if (!isInvincible) return;
-
-            invincibilityTimer -= deltaTime;
-
-            // Effet de clignotement du joueur
-            if ((int)(invincibilityTimer * 10) % 2 == 0)
-            {
-                player.Opacity = 0.5;
-            }
-            else
-            {
-                player.Opacity = 1.0;
-            }
-
-            // Fin de l'invincibilité
-            if (invincibilityTimer <= 0)
-            {
-                isInvincible = false;
-                player.Opacity = 1.0;
-            }
-        }
-        public void AddEnemy()
-        {
-            // liste pour noter les coordonnées (Col, Row) libres
-            List<Point> freeSpots = new List<Point>();
-
-            for (int row = 3; row < MAP_SIZE - 3; row++)
-            {
-                for (int col = 3; col < MAP_SIZE - 3; col++)
-                {
-                    // A. Vérifier si c'est la zone centrale (Spawn joueur)
-                    bool estCentre = (row >= CENTER_MIN && row <= CENTER_MAX &&
-                                      col >= CENTER_MIN && col <= CENTER_MAX);
-
-                    if (estCentre) continue; // On passe à la case suivante
-
-                    // B. Vérifier si cette case touche un obstacle existant
-                    // On crée un rectangle théorique à cet emplacement
-                    Rect potentialRect = new Rect(col * TILE_SIZE, row * TILE_SIZE, ENEMY_WIDTH, ENEMY_HEIGHT);
-
-                    bool collision = false;
-                    foreach (Rect obstacle in obstacleHitboxes)
-                    {
-                        if (obstacle.IntersectsWith(potentialRect))
-                        {
-                            collision = true;
-                            break;
-                        }
-                    }
-
-                    // C. Si pas de collision, c'est une place valide ! On l'ajoute à la liste.
-                    if (!collision)
-                    {
-                        freeSpots.Add(new Point(col, row));
-                    }
-                }
-            }
-
-            // 3. Vérification finale : Est-ce qu'il reste de la place ?
-            if (freeSpots.Count > 0)
-            {
-                // On pioche une case au hasard DANS la liste des cases libres
-                int index = rnd.Next(freeSpots.Count);
-                Point selectedSpot = freeSpots[index];
-
-                // On calcule la position finale en pixels
-                double enemyLeft = selectedSpot.X * TILE_SIZE + rnd.Next(0, 50);
-                double enemyTop = selectedSpot.Y * TILE_SIZE + rnd.Next(0, 50);
-
-                // --- Création visuelle de l'ennemi (votre code original) ---
-                Image enemy = new Image
-                {
-                    Source = enemyAnimImages[0],
-                    Width = ENEMY_WIDTH,
-                    Height = ENEMY_HEIGHT,
-                    Stretch = Stretch.Uniform
-                };
-
-                Canvas.SetLeft(enemy, enemyLeft);
-                Canvas.SetTop(enemy, enemyTop);
-                Panel.SetZIndex(enemy, 2);
-
-                mapCanvas.Children.Add(enemy);
-                enemies.Add(enemy);
-
-#if DEBUG
-                Console.WriteLine($"Ennemi ajouté en : {selectedSpot.X}, {selectedSpot.Y}");
-#endif
-            }
-            else
-            {
-#if DEBUG
-                Console.WriteLine("Carte pleine ! Impossible d'ajouter un ennemi.");
-#endif
-            }
-        }
-
-        private void UpdateEnemyAnimations(double deltaTime)
-        {
-            if (enemies.Count == 0) return;
-
-            enemyFrameTimer += deltaTime;
-
-            // Changer d'image toutes les 0.15 secondes (ajustez la vitesse ici)
-            if (enemyFrameTimer >= 0.15)
-            {
-                enemyFrameTimer = 0;
-                enemyCurrentFrame++;
-
-                // Boucler l'index (0, 1, 2, 3, 0, 1...)
-                int frameIndex = enemyCurrentFrame % enemyAnimImages.Count;
-                BitmapImage currentImage = enemyAnimImages[frameIndex];
-
-                // Mettre à jour tous les ennemis
-                foreach (Image enemy in enemies)
-                {
-                    enemy.Source = currentImage;
-                }
-            }
-        }
-
-        // =====================
-        // PLAYER
-        // =====================
-
-        private void SpeedUpgrade()
-        {
-            if((nbNuggets>=NUGGETS_FOR_SPEED_UPGRADE) && (playerSpeed<=MAX_PLAYER_SPEED))
-            {
-                playerSpeed += SPEED_UPGRADE_AMOUNT;
-                nbNuggets -= (int)NUGGETS_FOR_SPEED_UPGRADE;
-                nuggetsDisplay();
-#if DEBUG
-                Console.WriteLine("Speed upgrated");
-#endif
-            }
-        }
-
-        private void lifedisplay()
-        {
-            foreach (Image life in lives)
-            {
-                GameCanvas.Children.Remove(life);
-            }
-            lives.Clear();
-
-            for (int i = 0; i < currentLives; i++)
-            {
-                Image lifeIcon = new Image
-                {
-                    Width = 40,
-                    Height = 40,
-                    Source = lifeIconImage,
-                };
-                Canvas.SetLeft(lifeIcon, i*100+10);
-                Canvas.SetTop(lifeIcon, 10);
-                GameCanvas.Children.Add(lifeIcon);
-                lives.Add(lifeIcon);
-            }
-        }
-
-        private void AddLife()
-        {
-            if ((currentLives < MAX_LIVES) && (nbNuggets >= NUGGETS_FOR_EXTRA_LIFE))
-            {
-#if DEBUG
-                Console.WriteLine("Adding life");
-#endif
-                Image lifeIcon = new Image
-                {
-                    Width = 40,
-                    Height = 40,
-                    Source = lifeIconImage,
-                };
-                Canvas.SetLeft(lifeIcon, lives.Count * 100 + 10);
-                Canvas.SetTop(lifeIcon, 10);
-
-                GameCanvas.Children.Add(lifeIcon);
-                lives.Add(lifeIcon);
-                currentLives++;
-                nbNuggets -= (int)NUGGETS_FOR_EXTRA_LIFE;
-                nuggetsDisplay();
-            }
-        }
-
-        private void RemoveLife()
-        {
-            if (currentLives > 0)
-            {
-#if DEBUG
-                Console.WriteLine("Removing life");
-#endif
-                int last = lives.Count - 1;
-                GameCanvas.Children.Remove(lives[last]);
-                lives.RemoveAt(last);
-                currentLives--;
-
-                if (currentLives == 0)
-                {
-                    GameOver();
-#if DEBUG
-                    Console.WriteLine("GameOver");
-#endif
-                }
-            }
-        }
-
-        private void AddNugget()
-        {
-            nbNuggets++;
-            nuggetsDisplay();
-        }
-        private void CreatePlayer()
-        {
-            // On remplace le Rectangle par une Image
-            player = new Image
-            {
-                Width = PLAYER_WIDTH,
-                Height = PLAYER_HEIGHT,
-                Source = animDown[0],
-                Stretch = Stretch.Uniform // Pour garder les proportions
-            };
-            // Position fixe au centre de l'écran
-            GameCanvas.Children.Add(player);
-        }
-
-        private void MovePlayer(double deltaTime)
-        {
-            // Calculer le mouvement basé sur les touches pressées
-            double deltaX = 0;
-            double deltaY = 0;
-
-            // Réinitialiser isMoving à chaque frame
-            isMoving = false;
-
-            // --- Gestion de l'axe Y (Haut / Bas) ---
-            if (pressedKeys.Contains(Key.Z) || pressedKeys.Contains(Key.Up))
-            {
-                deltaY += 1;
-                currentDirection = "Up";
-                isMoving = true;
-            }
-            if (pressedKeys.Contains(Key.S) || pressedKeys.Contains(Key.Down))
-            {
-                deltaY -= 1;
-                currentDirection = "Down";
-                isMoving = true;
-            }
-
-            if (pressedKeys.Contains(Key.Q) || pressedKeys.Contains(Key.Left))
-            {
-                deltaX += 1;
-                currentDirection = "Left";
-                isMoving = true;
-            }
-            if (pressedKeys.Contains(Key.D) || pressedKeys.Contains(Key.Right))
-            {
-                deltaX -= 1;
-                currentDirection = "Right";
-                isMoving = true;
-            }
-
-
-            // Appliquer le mouvement avec delta time
-            if (deltaX != 0 || deltaY != 0)
-            {
-                double length = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
-
-                // pour éviter un déplacement plus rapide en diagonale
-                deltaX /= length;
-                deltaY /= length;
-
-                // Position actuelle du joueur sur l'écran (fixe)
-                double playerScreenX = Canvas.GetLeft(player);
-                double playerScreenY = Canvas.GetTop(player);
-
-                // TEST AXE X 
-                double proposedMapOffsetX = mapOffsetX + (deltaX * playerSpeed * deltaTime);
-
-                // Calcul de la position du joueur DANS LE MONDE
-                // Formule : PositionJoueurMonde = PositionJoueurEcran - PositionCarteEcran
-                double playerWorldX_Future = playerScreenX - proposedMapOffsetX;
-                double playerWorldY_Current = playerScreenY - mapOffsetY;
-
-                Rect playerRectX = new Rect(playerWorldX_Future, playerWorldY_Current, player.Width, player.Height);
-
-                if (!CheckCollision(playerRectX))
-                {
-                    mapOffsetX = proposedMapOffsetX; // Pas de collision, on valide le mouvement X
-                }
-
-                // TEST AXE Y
-                double proposedMapOffsetY = mapOffsetY + (deltaY * playerSpeed * deltaTime);
-
-                // On recalcule avec la potentielle nouvelle position X validée juste avant
-                double playerWorldX_Current = playerScreenX - mapOffsetX;
-                double playerWorldY_Future = playerScreenY - proposedMapOffsetY;
-
-                Rect playerRectY = new Rect(playerWorldX_Current, playerWorldY_Future, player.Width, player.Height);
-
-                if (!CheckCollision(playerRectY))
-                {
-                    mapOffsetY = proposedMapOffsetY; // Pas de collision, on valide le mouvement Y
-                }
-            }
-        }
-
-        // =====================
-        // PLAYER ANIMATION
-        // =====================
-
-        private void UpdatePlayerAnimation(double deltaTime)
-        {
-            if (isMoving)
-            {
-                frameTimer += deltaTime;
-
-                // Est-ce qu'il est temps de changer d'image ?
-                if (frameTimer >= timePerFrame)
-                {
-                    frameTimer = 0;
-                    currentFrame++; // Image suivante
-                }
-            }
-            else
-            {
-                // Si on ne bouge pas, on reste sur la première image (position statique)
-                currentFrame = 0;
-                frameTimer = 0;
-            }
-
-            // --- APPLICATION DE L'IMAGE ---
-
-            // On sélectionne la bonne liste selon la direction
-            List<BitmapImage> currentAnimList = animDown; // Par défaut
-
-            switch (currentDirection)
-            {
-                case "Up": currentAnimList = animUp; break;
-                case "Down": currentAnimList = animDown; break;
-                case "Left": currentAnimList = animLeft; break;
-                case "Right": currentAnimList = animRight; break;
-            }
-
-            // Sécurité : on s'assure que currentFrame ne dépasse pas la taille de la liste (Modulo)
-            if (currentAnimList.Count > 0)
-            {
-                int indexReel = currentFrame % currentAnimList.Count;
-                player.Source = currentAnimList[indexReel];
-            }
-        }
-
-
-        // =====================
-        // BULLETS
-        // =====================
-        private void ShootcooldownUpgrade()
-        {
-            if ((shootCooldown > 0.05) && (nbNuggets>=NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE))
-            {
-                shootCooldown -= SHOOTCOOLDOWN_UPGRADE_AMOUNT;
-                nbNuggets -= (int)NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE;
-                nuggetsDisplay();
-#if DEBUG
-                Console.WriteLine("Shootcooldown improved");
-#endif
-            }
-        }
-        private void ShootBullet(Point Target)
-        {
-            double playerCenterX = Canvas.GetLeft(player) - mapOffsetX + player.Width / 2;
-            double playerCenterY = Canvas.GetTop(player) - mapOffsetY + player.Height / 2;
-            double pX = Target.X - mapOffsetX;
-            double pY = Target.Y - mapOffsetY;
-
-            Vector direction = new Vector(pX - playerCenterX, pY - playerCenterY);
-            direction.Normalize();
-            Rectangle bullet = new Rectangle
-            {
-                Width = 10,
-                Height = 4,
-                Fill = Brushes.Black
-            };
-            Canvas.SetLeft(bullet, playerCenterX);
-            Canvas.SetTop(bullet, playerCenterY);
-            GameCanvas.Children.Add(bullet);
-            double angle = Math.Atan2(direction.Y, direction.X) * 180 / Math.PI;
-            bullet.RenderTransform = new RotateTransform(angle);
-
-            bullets.Add(bullet);
-            directions.Add(direction);
-            bulletWorldX.Add(playerCenterX);
-            bulletWorldY.Add(playerCenterY);
-#if DEBUG
-            Console.WriteLine("Space pressed at Mouse X: " + pX + " Mouse Y: " + pY);
-            Console.WriteLine("vector X: " + direction.X + " vector Y: " + direction.Y);
-            Console.WriteLine("Angle: " + angle);
-#endif
-        }
-
-        private void MoveBullets(double deltaTime)
-        {
-            for (int i = bullets.Count - 1; i >= 0; i--)
-            {
-                bool bulletRemoved = false;
-
-                Rectangle bullet = bullets[i];
-                Vector direction = directions[i];
-
-                // Avancer la balle dans le monde
-                bulletWorldX[i] += direction.X * BULLET_SPEED * deltaTime;
-                bulletWorldY[i] += direction.Y * BULLET_SPEED * deltaTime;
-
-                // Convertir position monde -> position écran
-                double x = bulletWorldX[i] + mapOffsetX - bullet.Width / 2;
-                double y = bulletWorldY[i] + mapOffsetY - bullet.Height / 2;
-
-                Canvas.SetLeft(bullet, x);
-                Canvas.SetTop(bullet, y);
-
-                // Créer la hitbox de la balle en coordonnées monde
-                Rect bulletRect = new Rect(bulletWorldX[i] - bullet.Width / 2, bulletWorldY[i] - bullet.Height / 2, bullet.Width, bullet.Height);
-
-                // Vérifier collision avec les ennemis
-                for (int j = enemies.Count - 1; j >= 0; j--)
-                {
-                    Image enemy = enemies[j];
-                    double enemyLeft = Canvas.GetLeft(enemy);
-                    double enemyTop = Canvas.GetTop(enemy);
-                    Rect enemyRect = new Rect(enemyLeft, enemyTop, enemy.Width, enemy.Height);
-
-                    if (bulletRect.IntersectsWith(enemyRect))
-                    {
-                        // Ennemi touché : le faire mourir
-                        KillEnemy(enemy);
-                        bulletRemoved = true;
-                        break;
-                    }
-                }
-
-                if (x < 0 || x > GameCanvas.ActualWidth || y < 0 || y > GameCanvas.ActualHeight)
-                {
-                    bulletRemoved = true;
-                }
-
-                if (bulletRemoved)
-                {
-                    GameCanvas.Children.Remove(bullet);
-                    bullets.RemoveAt(i);
-                    directions.RemoveAt(i);
-                    bulletWorldX.RemoveAt(i);
-                    bulletWorldY.RemoveAt(i);
-#if DEBUG
-                    Console.WriteLine("Children removed " + i);
-#endif
-        }
-
-    }
-}
-
-
-        // =====================
-        // MAP & COLLISIONS
-        // =====================
+        // ===================================================================================================================================================
+        //                                                                          MAP & COLLISIONS
+        // ===================================================================================================================================================
 
         private bool CheckCollision(Rect playerRect)
         {
@@ -1072,7 +430,7 @@ namespace AstroShooter
 #endif
             }
 
-            foreach (var meteor in meteors.ToList())
+            foreach (var meteor in asteroid.ToList())
             {
                 double left = Canvas.GetLeft(meteor);
                 double top = Canvas.GetTop(meteor);
@@ -1085,7 +443,7 @@ namespace AstroShooter
                 if (meteorHitbox.Contains(clickWorld))
                 {
                     mapCanvas.Children.Remove(meteor);
-                    meteors.Remove(meteor);
+                    asteroid.Remove(meteor);
                     obstacleHitboxes.Remove(meteorHitbox);
                     AddNugget();
                     AddMeteor();
@@ -1169,7 +527,7 @@ namespace AstroShooter
                     Panel.SetZIndex(meteor, 1);
 
                     mapCanvas.Children.Add(meteor);
-                    meteors.Add(meteor);
+                    asteroid.Add(meteor);
 
                     obstacleHitboxes.Add(newMeteorRect);
 
@@ -1186,9 +544,658 @@ namespace AstroShooter
             }
         }
 
-        // =====================
-        // UI / MENUS
-        // =====================
+        // ===================================================================================================================================================
+        //                                                                          INPUT
+        // ===================================================================================================================================================
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            pressedKeys.Add(e.Key);
+            if (isPlaying == false)
+            {
+                return;
+            }
+            if (e.Key == Key.Escape)
+            {
+                if (!isPaused)
+                {
+                    ShowPauseMenu();
+                }
+                else
+                {
+                    ResumeGame();
+                }
+            }
+        }
+        private void Window_KeyUp(object sender, KeyEventArgs e)
+        {
+            pressedKeys.Remove(e.Key);
+        }
+
+        // ===================================================================================================================================================
+        //                                                                          GAME LOOP
+        // ===================================================================================================================================================
+        private double CalculateDeltaTime()
+        {
+            // Calculer le delta time pour un mouvement indépendant du framerate
+            TimeSpan currentTime = gameTime.Elapsed;
+            double deltaTime = (currentTime - lastFrameTime).TotalSeconds;
+            lastFrameTime = currentTime;
+            return deltaTime;
+        }
+
+        private void GameLoop(object? sender, EventArgs e)
+        {
+            double deltaTime = CalculateDeltaTime();
+            if (isPlaying && !isPaused)
+            {
+                MovePlayer(deltaTime);
+                UpdatePlayerAnimation(deltaTime);
+                UpdateEnemyAnimations(deltaTime);
+                MoveEnemies(deltaTime);           // Ajout : déplacement des ennemis
+                UpdateInvincibility(deltaTime);   // Ajout : gestion de l'invincibilité
+                MoveBullets(deltaTime);
+                UpdateDisplay();
+                CleanupEnemies();
+                timeSinceLastShoot += deltaTime;
+                if (pressedKeys.Contains(Key.Space))
+                {
+                    if (timeSinceLastShoot >= shootCooldown)
+                    {
+                        ShootBullet(Mouse.GetPosition(GameCanvas));
+                        timeSinceLastShoot = 0;
+                    }
+                }
+            }
+        }
+
+        // ===================================================================================================================================================
+        //                                                                          PLAYER
+        // ===================================================================================================================================================
+
+        private void SpeedUpgrade()
+        {
+            if ((nbNuggets >= NUGGETS_FOR_SPEED_UPGRADE) && (playerSpeed <= MAX_PLAYER_SPEED))
+            {
+                playerSpeed += SPEED_UPGRADE_AMOUNT;
+                nbNuggets -= (int)NUGGETS_FOR_SPEED_UPGRADE;
+                nuggetsDisplay();
+#if DEBUG
+                Console.WriteLine("Speed upgrated");
+#endif
+            }
+        }
+
+        private void lifedisplay()
+        {
+            foreach (Image life in lives)
+            {
+                GameCanvas.Children.Remove(life);
+            }
+            lives.Clear();
+
+            for (int i = 0; i < currentLives; i++)
+            {
+                Image lifeIcon = new Image
+                {
+                    Width = 40,
+                    Height = 40,
+                    Source = lifeIconImage,
+                };
+                Canvas.SetLeft(lifeIcon, i * 100 + 10);
+                Canvas.SetTop(lifeIcon, 10);
+                GameCanvas.Children.Add(lifeIcon);
+                lives.Add(lifeIcon);
+            }
+        }
+
+        private void AddLife()
+        {
+            if ((currentLives < MAX_LIVES) && (nbNuggets >= NUGGETS_FOR_EXTRA_LIFE))
+            {
+#if DEBUG
+                Console.WriteLine("Adding life");
+#endif
+                Image lifeIcon = new Image
+                {
+                    Width = 40,
+                    Height = 40,
+                    Source = lifeIconImage,
+                };
+                Canvas.SetLeft(lifeIcon, lives.Count * 100 + 10);
+                Canvas.SetTop(lifeIcon, 10);
+
+                GameCanvas.Children.Add(lifeIcon);
+                lives.Add(lifeIcon);
+                currentLives++;
+                nbNuggets -= (int)NUGGETS_FOR_EXTRA_LIFE;
+                nuggetsDisplay();
+            }
+        }
+
+        private void RemoveLife()
+        {
+            if (currentLives > 0)
+            {
+#if DEBUG
+                Console.WriteLine("Removing life");
+#endif
+                int last = lives.Count - 1;
+                GameCanvas.Children.Remove(lives[last]);
+                lives.RemoveAt(last);
+                currentLives--;
+
+                if (currentLives == 0)
+                {
+                    GameOver();
+#if DEBUG
+                    Console.WriteLine("GameOver");
+#endif
+                }
+            }
+        }
+
+        private void AddNugget()
+        {
+            nbNuggets++;
+            nuggetsDisplay();
+        }
+        private void CreatePlayer()
+        {
+            // On remplace le Rectangle par une Image
+            player = new Image
+            {
+                Width = PLAYER_WIDTH,
+                Height = PLAYER_HEIGHT,
+                Source = animDown[0],
+                Stretch = Stretch.Uniform // Pour garder les proportions
+            };
+            // Position fixe au centre de l'écran
+            GameCanvas.Children.Add(player);
+        }
+
+        private void MovePlayer(double deltaTime)
+        {
+            // Calculer le mouvement basé sur les touches pressées
+            double deltaX = 0;
+            double deltaY = 0;
+
+            // Réinitialiser isMoving à chaque frame
+            isMoving = false;
+
+            // --- Gestion de l'axe Y (Haut / Bas) ---
+            if (pressedKeys.Contains(Key.Z) || pressedKeys.Contains(Key.Up))
+            {
+                deltaY += 1;
+                currentDirection = "Up";
+                isMoving = true;
+            }
+            if (pressedKeys.Contains(Key.S) || pressedKeys.Contains(Key.Down))
+            {
+                deltaY -= 1;
+                currentDirection = "Down";
+                isMoving = true;
+            }
+
+            if (pressedKeys.Contains(Key.Q) || pressedKeys.Contains(Key.Left))
+            {
+                deltaX += 1;
+                currentDirection = "Left";
+                isMoving = true;
+            }
+            if (pressedKeys.Contains(Key.D) || pressedKeys.Contains(Key.Right))
+            {
+                deltaX -= 1;
+                currentDirection = "Right";
+                isMoving = true;
+            }
+
+
+            // Appliquer le mouvement avec delta time
+            if (deltaX != 0 || deltaY != 0)
+            {
+                double length = Math.Sqrt(deltaX * deltaX + deltaY * deltaY);
+
+                // pour éviter un déplacement plus rapide en diagonale
+                deltaX /= length;
+                deltaY /= length;
+
+                // Position actuelle du joueur sur l'écran (fixe)
+                double playerScreenX = Canvas.GetLeft(player);
+                double playerScreenY = Canvas.GetTop(player);
+
+                // TEST AXE X 
+                double proposedMapOffsetX = mapOffsetX + (deltaX * playerSpeed * deltaTime);
+
+                // Calcul de la position du joueur DANS LE MONDE
+                // Formule : PositionJoueurMonde = PositionJoueurEcran - PositionCarteEcran
+                double playerWorldX_Future = playerScreenX - proposedMapOffsetX;
+                double playerWorldY_Current = playerScreenY - mapOffsetY;
+
+                Rect playerRectX = new Rect(playerWorldX_Future, playerWorldY_Current, player.Width, player.Height);
+
+                if (!CheckCollision(playerRectX))
+                {
+                    mapOffsetX = proposedMapOffsetX; // Pas de collision, on valide le mouvement X
+                }
+
+                // TEST AXE Y
+                double proposedMapOffsetY = mapOffsetY + (deltaY * playerSpeed * deltaTime);
+
+                // On recalcule avec la potentielle nouvelle position X validée juste avant
+                double playerWorldX_Current = playerScreenX - mapOffsetX;
+                double playerWorldY_Future = playerScreenY - proposedMapOffsetY;
+
+                Rect playerRectY = new Rect(playerWorldX_Current, playerWorldY_Future, player.Width, player.Height);
+
+                if (!CheckCollision(playerRectY))
+                {
+                    mapOffsetY = proposedMapOffsetY; // Pas de collision, on valide le mouvement Y
+                }
+            }
+        }
+
+        private void UpdatePlayerAnimation(double deltaTime)
+        {
+            if (isMoving)
+            {
+                frameTimer += deltaTime;
+
+                // Est-ce qu'il est temps de changer d'image ?
+                if (frameTimer >= timePerFrame)
+                {
+                    frameTimer = 0;
+                    currentFrame++; // Image suivante
+                }
+            }
+            else
+            {
+                // Si on ne bouge pas, on reste sur la première image (position statique)
+                currentFrame = 0;
+                frameTimer = 0;
+            }
+
+            // --- APPLICATION DE L'IMAGE ---
+
+            // On sélectionne la bonne liste selon la direction
+            List<BitmapImage> currentAnimList = animDown; // Par défaut
+
+            switch (currentDirection)
+            {
+                case "Up": currentAnimList = animUp; break;
+                case "Down": currentAnimList = animDown; break;
+                case "Left": currentAnimList = animLeft; break;
+                case "Right": currentAnimList = animRight; break;
+            }
+
+            // Sécurité : on s'assure que currentFrame ne dépasse pas la taille de la liste (Modulo)
+            if (currentAnimList.Count > 0)
+            {
+                int indexReel = currentFrame % currentAnimList.Count;
+                player.Source = currentAnimList[indexReel];
+            }
+        }
+
+        // ===================================================================================================================================================
+        //                                                                          ENNEMIS
+        // ===================================================================================================================================================
+
+        public void AddEnemy()
+        {
+            // liste pour noter les coordonnées (Col, Row) libres
+            List<Point> freeSpots = new List<Point>();
+
+            for (int row = 3; row < MAP_SIZE - 3; row++)
+            {
+                for (int col = 3; col < MAP_SIZE - 3; col++)
+                {
+                    // A. Vérifier si c'est la zone centrale (Spawn joueur)
+                    bool estCentre = (row >= CENTER_MIN && row <= CENTER_MAX &&
+                                      col >= CENTER_MIN && col <= CENTER_MAX);
+
+                    if (estCentre) continue; // On passe à la case suivante
+
+                    // B. Vérifier si cette case touche un obstacle existant
+                    // On crée un rectangle théorique à cet emplacement
+                    Rect potentialRect = new Rect(col * TILE_SIZE, row * TILE_SIZE, ENEMY_WIDTH, ENEMY_HEIGHT);
+
+                    bool collision = false;
+                    foreach (Rect obstacle in obstacleHitboxes)
+                    {
+                        if (obstacle.IntersectsWith(potentialRect))
+                        {
+                            collision = true;
+                            break;
+                        }
+                    }
+
+                    // C. Si pas de collision, c'est une place valide ! On l'ajoute à la liste.
+                    if (!collision)
+                    {
+                        freeSpots.Add(new Point(col, row));
+                    }
+                }
+            }
+
+            // 3. Vérification finale : Est-ce qu'il reste de la place ?
+            if (freeSpots.Count > 0)
+            {
+                // On pioche une case au hasard DANS la liste des cases libres
+                int index = rnd.Next(freeSpots.Count);
+                Point selectedSpot = freeSpots[index];
+
+                // On calcule la position finale en pixels
+                double enemyLeft = selectedSpot.X * TILE_SIZE + rnd.Next(0, 50);
+                double enemyTop = selectedSpot.Y * TILE_SIZE + rnd.Next(0, 50);
+
+                // --- Création visuelle de l'ennemi (votre code original) ---
+                Image enemy = new Image
+                {
+                    Source = enemyAnimImages[0],
+                    Width = ENEMY_WIDTH,
+                    Height = ENEMY_HEIGHT,
+                    Stretch = Stretch.Uniform
+                };
+
+                Canvas.SetLeft(enemy, enemyLeft);
+                Canvas.SetTop(enemy, enemyTop);
+                Panel.SetZIndex(enemy, 2);
+
+                mapCanvas.Children.Add(enemy);
+                enemies.Add(enemy);
+
+#if DEBUG
+                Console.WriteLine($"Ennemi ajouté en : {selectedSpot.X}, {selectedSpot.Y}");
+#endif
+            }
+            else
+            {
+#if DEBUG
+                Console.WriteLine("Carte pleine ! Impossible d'ajouter un ennemi.");
+#endif
+            }
+        }
+
+        private void MoveEnemies(double deltaTime)
+        {
+            // Position du joueur dans le monde
+            double playerScreenX = Canvas.GetLeft(player);
+            double playerScreenY = Canvas.GetTop(player);
+            double playerWorldX = playerScreenX - mapOffsetX;
+            double playerWorldY = playerScreenY - mapOffsetY;
+
+            // Hitbox du joueur
+            Rect playerRect = new Rect(playerWorldX, playerWorldY, player.Width, player.Height);
+
+            for (int i = enemies.Count - 1; i >= 0; i--)
+            {
+                Image enemy = enemies[i];
+
+                double enemyX = Canvas.GetLeft(enemy);
+                double enemyY = Canvas.GetTop(enemy);
+
+                // Calculer la direction vers le joueur
+                double dirX = playerWorldX - enemyX;
+                double dirY = playerWorldY - enemyY;
+
+                // Normaliser le vecteur direction
+                double length = Math.Sqrt(dirX * dirX + dirY * dirY);
+                if (length > 0)
+                {
+                    dirX /= length;
+                    dirY /= length;
+                }
+
+                // Nouvelle position proposée
+                double newX = enemyX + dirX * enemySpeed * deltaTime;
+                double newY = enemyY + dirY * enemySpeed * deltaTime;
+
+                // Vérifier collision avec les obstacles
+                Rect enemyRectX = new Rect(newX, enemyY, enemy.Width, enemy.Height);
+                Rect enemyRectY = new Rect(enemyX, newY, enemy.Width, enemy.Height);
+
+                bool canMoveX = !CheckCollision(enemyRectX);
+                bool canMoveY = !CheckCollision(enemyRectY);
+
+                if (canMoveX)
+                {
+                    Canvas.SetLeft(enemy, newX);
+                    enemyX = newX;
+                }
+                if (canMoveY)
+                {
+                    Canvas.SetTop(enemy, newY);
+                    enemyY = newY;
+                }
+
+                // Vérifier collision avec le joueur
+                Rect enemyRect = new Rect(enemyX, enemyY, enemy.Width, enemy.Height);
+                if (enemyRect.IntersectsWith(playerRect))
+                {
+                    OnPlayerHit();
+                }
+            }
+        }
+
+        private void UpdateEnemyAnimations(double deltaTime)
+        {
+            if (enemies.Count == 0) return;
+
+            enemyFrameTimer += deltaTime;
+
+            // Changer d'image toutes les 0.15 secondes (ajustez la vitesse ici)
+            if (enemyFrameTimer >= 0.15)
+            {
+                enemyFrameTimer = 0;
+                enemyCurrentFrame++;
+
+                // Boucler l'index (0, 1, 2, 3, 0, 1...)
+                int frameIndex = enemyCurrentFrame % enemyAnimImages.Count;
+                BitmapImage currentImage = enemyAnimImages[frameIndex];
+
+                // Mettre à jour tous les ennemis
+                foreach (Image enemy in enemies)
+                {
+                    enemy.Source = currentImage;
+                }
+            }
+        }
+
+        private async void KillEnemy(Image enemy)
+        {
+            if (!enemies.Contains(enemy)) return;
+
+            enemiesToRemove.Add(enemy);
+            deadEnemies.Add(enemy);
+
+            enemy.Source = enemyDeadImage;
+
+            await Task.Delay(3000);
+
+            if (deadEnemies.Contains(enemy))
+            {
+                deadEnemies.Remove(enemy);
+                mapCanvas.Children.Remove(enemy);
+            }
+
+            int newEnemyCount = rnd.Next(1, 3);
+            for (int i = 0; i < newEnemyCount; i++)
+            {
+                if (enemies.Count < MAX_ENEMIES)
+                    AddEnemy();
+                else
+                    enemySpeed += 20;
+            }
+        }
+
+        private void CleanupEnemies()
+        {
+            if (enemiesToRemove.Count == 0) return;
+
+            foreach (var enemy in enemiesToRemove)
+            {
+                enemies.Remove(enemy);
+            }
+
+            enemiesToRemove.Clear();
+        }
+
+
+        private void OnPlayerHit()
+        {
+            if (isInvincible) return;
+
+            RemoveLife();
+            StartInvincibility();
+
+#if DEBUG
+            Console.WriteLine("Joueur touché par un ennemi !");
+#endif
+        }
+
+        private void StartInvincibility()
+        {
+            isInvincible = true;
+            invincibilityTimer = INVINCIBILITY_DURATION;
+        }
+
+        private void UpdateInvincibility(double deltaTime)
+        {
+            if (!isInvincible) return;
+
+            invincibilityTimer -= deltaTime;
+
+            // Effet de clignotement du joueur
+            if ((int)(invincibilityTimer * 10) % 2 == 0)
+            {
+                player.Opacity = 0.5;
+            }
+            else
+            {
+                player.Opacity = 1.0;
+            }
+
+            // Fin de l'invincibilité
+            if (invincibilityTimer <= 0)
+            {
+                isInvincible = false;
+                player.Opacity = 1.0;
+            }
+        }
+
+
+        // ===================================================================================================================================================
+        //                                                                          BULLETS
+        // ===================================================================================================================================================
+
+        private void ShootBullet(Point Target)
+        {
+            double playerCenterX = Canvas.GetLeft(player) - mapOffsetX + player.Width / 2;
+            double playerCenterY = Canvas.GetTop(player) - mapOffsetY + player.Height / 2;
+            double pX = Target.X - mapOffsetX;
+            double pY = Target.Y - mapOffsetY;
+
+            Vector direction = new Vector(pX - playerCenterX, pY - playerCenterY);
+            direction.Normalize();
+            Rectangle bullet = new Rectangle
+            {
+                Width = 10,
+                Height = 4,
+                Fill = Brushes.Black
+            };
+            Canvas.SetLeft(bullet, playerCenterX);
+            Canvas.SetTop(bullet, playerCenterY);
+            GameCanvas.Children.Add(bullet);
+            double angle = Math.Atan2(direction.Y, direction.X) * 180 / Math.PI;
+            bullet.RenderTransform = new RotateTransform(angle);
+
+            bullets.Add(bullet);
+            directions.Add(direction);
+            bulletWorldX.Add(playerCenterX);
+            bulletWorldY.Add(playerCenterY);
+#if DEBUG
+            Console.WriteLine("Space pressed at Mouse X: " + pX + " Mouse Y: " + pY);
+            Console.WriteLine("vector X: " + direction.X + " vector Y: " + direction.Y);
+            Console.WriteLine("Angle: " + angle);
+#endif
+        }
+
+        private void MoveBullets(double deltaTime)
+        {
+            for (int i = bullets.Count - 1; i >= 0; i--)
+            {
+                bool bulletRemoved = false;
+
+                Rectangle bullet = bullets[i];
+                Vector direction = directions[i];
+
+                // Avancer la balle dans le monde
+                bulletWorldX[i] += direction.X * BULLET_SPEED * deltaTime;
+                bulletWorldY[i] += direction.Y * BULLET_SPEED * deltaTime;
+
+                // Convertir position monde -> position écran
+                double x = bulletWorldX[i] + mapOffsetX - bullet.Width / 2;
+                double y = bulletWorldY[i] + mapOffsetY - bullet.Height / 2;
+
+                Canvas.SetLeft(bullet, x);
+                Canvas.SetTop(bullet, y);
+
+                // Créer la hitbox de la balle en coordonnées monde
+                Rect bulletRect = new Rect(bulletWorldX[i] - bullet.Width / 2, bulletWorldY[i] - bullet.Height / 2, bullet.Width, bullet.Height);
+
+                // Vérifier collision avec les ennemis
+                for (int j = enemies.Count - 1; j >= 0; j--)
+                {
+                    Image enemy = enemies[j];
+                    double enemyLeft = Canvas.GetLeft(enemy);
+                    double enemyTop = Canvas.GetTop(enemy);
+                    Rect enemyRect = new Rect(enemyLeft, enemyTop, enemy.Width, enemy.Height);
+
+                    if (bulletRect.IntersectsWith(enemyRect))
+                    {
+                        // Ennemi touché : le faire mourir
+                        KillEnemy(enemy);
+                        bulletRemoved = true;
+                        break;
+                    }
+                }
+
+                if (x < 0 || x > GameCanvas.ActualWidth || y < 0 || y > GameCanvas.ActualHeight)
+                {
+                    bulletRemoved = true;
+                }
+
+                if (bulletRemoved)
+                {
+                    GameCanvas.Children.Remove(bullet);
+                    bullets.RemoveAt(i);
+                    directions.RemoveAt(i);
+                    bulletWorldX.RemoveAt(i);
+                    bulletWorldY.RemoveAt(i);
+#if DEBUG
+                    Console.WriteLine("Children removed " + i);
+#endif          
+                }
+            }
+            
+        }
+
+        private void ShootcooldownUpgrade()
+        {
+            if ((shootCooldown > 0.05) && (nbNuggets >= NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE))
+            {
+                shootCooldown -= SHOOTCOOLDOWN_UPGRADE_AMOUNT;
+                nbNuggets -= (int)NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE;
+                nuggetsDisplay();
+#if DEBUG
+                Console.WriteLine("Shootcooldown improved");
+#endif
+            }
+        }
+
+        // ===================================================================================================================================================
+        //                                                                          IU / MENUS
+        // ===================================================================================================================================================
 
         public void ShowShopScreen()
         {
@@ -1283,9 +1290,9 @@ namespace AstroShooter
             InterstellarNuggetsCount.Text = "Interstellar Nuggets : " + nbNuggets;
         }
 
-        // =====================
-        // AUDIO
-        // =====================
+        // ===================================================================================================================================================
+        //                                                                          AUDIO
+        // ===================================================================================================================================================
 
         public void StartMusic()
         {
