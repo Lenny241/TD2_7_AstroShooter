@@ -39,8 +39,9 @@ namespace AstroShooter
         private static readonly ushort SPEED_UPGRADE_AMOUNT = 50;
         private static readonly double SHOOTCOOLDOWN_UPGRADE_AMOUNT = 0.05;
         private static readonly uint MAX_PLAYER_SPEED = 800;
-        private static readonly uint MAX_ENEMIES = 50;
+        private static readonly uint MAX_ENEMIES = 100;
         private static readonly double INVINCIBILITY_DURATION = 2.0; // Durée d'invincibilité en secondes
+        private static readonly double MIN_SHOOTCOOLDOWN = 0.15;
         private bool isInvincible = false;
         private double invincibilityTimer = 0;
 
@@ -780,7 +781,7 @@ namespace AstroShooter
         // =====================
         private void ShootcooldownUpgrade()
         {
-            if ((shootCooldown > 0.05) && (nbNuggets>=NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE))
+            if ((shootCooldown > MIN_SHOOTCOOLDOWN) && (nbNuggets>=NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE))
             {
                 shootCooldown -= SHOOTCOOLDOWN_UPGRADE_AMOUNT;
                 nbNuggets -= (int)NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE;
