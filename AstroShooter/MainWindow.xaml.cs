@@ -39,7 +39,7 @@ namespace AstroShooter
         private static readonly ushort SPEED_UPGRADE_AMOUNT = 50;
         private static readonly double SHOOTCOOLDOWN_UPGRADE_AMOUNT = 0.05;
         private static readonly uint MAX_PLAYER_SPEED = 800;
-        private static readonly double ENEMY_SPEED = 100; // Vitesse de déplacement des ennemis
+        private static readonly uint MAX_ENEMIES = 50;
         private static readonly double INVINCIBILITY_DURATION = 2.0; // Durée d'invincibilité en secondes
         private bool isInvincible = false;
         private double invincibilityTimer = 0;
@@ -51,7 +51,8 @@ namespace AstroShooter
 
         public int nbNuggets;
 
-        private double move_speed = 500;
+        private double playerSpeed = 500;
+        private double enemySpeed = 100; // Vitesse de déplacement des ennemis
 
         private List<Image> lives = new();
         private int currentLives = 3;
@@ -173,7 +174,7 @@ namespace AstroShooter
 
         public void VariablesInitialisation()
         {
-            move_speed = 500;
+            playerSpeed = 500;
             shootCooldown = 0.3;
             currentLives = 3;
             nbNuggets = 0;
@@ -326,7 +327,17 @@ namespace AstroShooter
             int newEnemyCount = rnd.Next(1, 3); // 1 ou 2 nouveaux ennemis
             for (int i = 0; i < newEnemyCount; i++)
             {
-                AddEnemy();
+                if (enemies.Count < MAX_ENEMIES)
+                {
+                    AddEnemy();
+                }
+                else
+                {
+                    enemySpeed += 20; // Augmente légèrement la vitesse des ennemis existants
+#if DEBUG
+                    Console.WriteLine("Nombre maximum d'ennemis atteint, impossible d'en ajouter plus.");
+#endif
+                }
             }
         }
 
@@ -361,8 +372,8 @@ namespace AstroShooter
                 }
 
                 // Nouvelle position proposée
-                double newX = enemyX + dirX * ENEMY_SPEED * deltaTime;
-                double newY = enemyY + dirY * ENEMY_SPEED * deltaTime;
+                double newX = enemyX + dirX * enemySpeed * deltaTime;
+                double newY = enemyY + dirY * enemySpeed * deltaTime;
 
                 // Vérifier collision avec les obstacles
                 Rect enemyRectX = new Rect(newX, enemyY, enemy.Width, enemy.Height);
@@ -449,7 +460,7 @@ namespace AstroShooter
 
                     // B. Vérifier si cette case touche un obstacle existant
                     // On crée un rectangle théorique à cet emplacement
-                    Rect potentialRect = new Rect(col * TILE_SIZE, row * TILE_SIZE, 50, 90);
+                    Rect potentialRect = new Rect(col * TILE_SIZE, row * TILE_SIZE, ENEMY_WIDTH, ENEMY_HEIGHT);
 
                     bool collision = false;
                     foreach (Rect obstacle in obstacleHitboxes)
@@ -477,7 +488,6 @@ namespace AstroShooter
                 Point selectedSpot = freeSpots[index];
 
                 // On calcule la position finale en pixels
-                // (J'ai gardé votre petit décalage aléatoire +0-50 pour le style)
                 double enemyLeft = selectedSpot.X * TILE_SIZE + rnd.Next(0, 50);
                 double enemyTop = selectedSpot.Y * TILE_SIZE + rnd.Next(0, 50);
 
@@ -485,8 +495,8 @@ namespace AstroShooter
                 Image enemy = new Image
                 {
                     Source = enemyAnimImages[0],
-                    Width = 50,
-                    Height = 90,
+                    Width = ENEMY_WIDTH,
+                    Height = ENEMY_HEIGHT,
                     Stretch = Stretch.Uniform
                 };
 
@@ -496,10 +506,6 @@ namespace AstroShooter
 
                 mapCanvas.Children.Add(enemy);
                 enemies.Add(enemy);
-
-                // Optionnel : Ajouter la hitbox de l'ennemi aux obstacles pour éviter
-                // que le prochain ennemi apparaisse EXACTEMENT sur celui-ci
-                // obstacleHitboxes.Add(new Rect(enemyLeft, enemyTop, 50, 90));
 
 #if DEBUG
                 Console.WriteLine($"Ennemi ajouté en : {selectedSpot.X}, {selectedSpot.Y}");
@@ -543,9 +549,9 @@ namespace AstroShooter
 
         private void SpeedUpgrade()
         {
-            if((nbNuggets>=NUGGETS_FOR_SPEED_UPGRADE) && (move_speed<=MAX_PLAYER_SPEED))
+            if((nbNuggets>=NUGGETS_FOR_SPEED_UPGRADE) && (playerSpeed<=MAX_PLAYER_SPEED))
             {
-                move_speed += SPEED_UPGRADE_AMOUNT;
+                playerSpeed += SPEED_UPGRADE_AMOUNT;
                 nbNuggets -= (int)NUGGETS_FOR_SPEED_UPGRADE;
                 nuggetsDisplay();
 #if DEBUG
@@ -693,7 +699,7 @@ namespace AstroShooter
                 double playerScreenY = Canvas.GetTop(player);
 
                 // TEST AXE X 
-                double proposedMapOffsetX = mapOffsetX + (deltaX * move_speed * deltaTime);
+                double proposedMapOffsetX = mapOffsetX + (deltaX * playerSpeed * deltaTime);
 
                 // Calcul de la position du joueur DANS LE MONDE
                 // Formule : PositionJoueurMonde = PositionJoueurEcran - PositionCarteEcran
@@ -708,7 +714,7 @@ namespace AstroShooter
                 }
 
                 // TEST AXE Y
-                double proposedMapOffsetY = mapOffsetY + (deltaY * move_speed * deltaTime);
+                double proposedMapOffsetY = mapOffsetY + (deltaY * playerSpeed * deltaTime);
 
                 // On recalcule avec la potentielle nouvelle position X validée juste avant
                 double playerWorldX_Current = playerScreenX - mapOffsetX;
