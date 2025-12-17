@@ -37,8 +37,6 @@ namespace AstroShooter
         public EventHandler ButSpeedRequested;
         public EventHandler ButShootCooldownRequested;
 
-
-
         private void ButClose_Click(object sender, RoutedEventArgs e)
         {
 #if DEBUG
