@@ -15,7 +15,7 @@
                 </LinearGradientBrush>
             </Label.Foreground>
         </Label>
-        <Button x:Name="ButOk" Content="Ok" HorizontalAlignment="Center" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Center" BorderBrush="Black" Foreground="White" Margin="0,200,0,0" Click="ButOk_Click">
+        <Button x:Name="ButOk" Content="Ok" HorizontalAlignment="Center" RenderTransformOrigin="2.473,0.953" FontFamily="Verdana" Width="100" Height="20" VerticalAlignment="Top" BorderBrush="Black" Foreground="White" Margin="0,708,0,0" Click="ButOk_Click">
             <Button.Background>
                 <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
                     <GradientStop Color="Black"/>
@@ -23,11 +23,10 @@
                 </LinearGradientBrush>
             </Button.Background>
         </Button>
-        <TextBlock HorizontalAlignment="Center" Margin="0,268,0,0" Text="Le joueur atterrie sur la lune, il doit survivre a des vagues de monstres qui veulent le tuer. Pour l’aider, il dispose d’une arme pour les tuer. Dans son vaisseau il dispose de machines lui permettant d’améliorer ses capacités grâce à un minerai trouvable dans les astéroïdes, ces derniers sont disposés aléatoirement sur la carte. 
-
-Le but est donc de survivre un maximum de temps aux différents vagues de monstres. Au fur et à mesure la difficulté augmente au fil du temps. 
-
-La carte est composée de dalle, elle est donc générée aléatoirement. Le personnage se déplace et évolue dans cette carte en 2D. " VerticalAlignment="Top" Height="231" Width="633" FontSize="18" TextWrapping="Wrap" TextAlignment="Center"/>
+        <TextBlock HorizontalAlignment="Center" Margin="0,268,0,0" Text="L’objectif du jeu est de survivre aux vagues d’ennemis. Pour se déplacer dans l’environnement, le joueur peut utiliser les flèches du clavier ou les touches ZQSD.
+Afin de récolter des minerais, le joueur doit repérer des astéroïdes présents sur la carte et cliquer dessus pour obtenir des Interstellar Nuggets, qui lui permettent d’améliorer ses capacités. Le magasin est accessible en cliquant sur le vaisseau du joueur. Il est alors possible d’acheter différentes améliorations en échange de ces nuggets, telles que l’augmentation de la vitesse de déplacement, la diminution du délai entre les tirs ou encore l’augmentation du nombre de vies.
+Le joueur commence la partie avec trois vies. Il perd une vie lorsqu’un ennemi le touche, et la partie prend fin lorsque toutes les vies sont perdues. Pour se défendre, le joueur dispose d’une arme : il doit viser un ennemi à l’aide de la souris et appuyer sur la touche espace pour tirer. Enfin, la touche Échap permet de mettre le jeu en pause ou de le quitter.
+" VerticalAlignment="Top" Height="329" Width="633" FontSize="18" TextWrapping="Wrap" TextAlignment="Center"/>
 
     </Grid>
 </UserControl>

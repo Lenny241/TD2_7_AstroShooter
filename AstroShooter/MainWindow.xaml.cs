@@ -46,7 +46,7 @@ namespace AstroShooter
 
         private UCShop currentShop;
         private double timeSinceLastShoot = 0;
-        double shootCooldown = 0.3;
+        private double shootCooldown = 0.3;
         Random rnd = new Random();
         Rect RocketHitBox;
 
@@ -779,7 +779,7 @@ namespace AstroShooter
         // =====================
         private void ShootcooldownUpgrade()
         {
-            if ((shootCooldown > 0.2) && (nbNuggets>=NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE))
+            if ((shootCooldown > 0.05) && (nbNuggets>=NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE))
             {
                 shootCooldown -= SHOOTCOOLDOWN_UPGRADE_AMOUNT;
                 nbNuggets -= (int)NUGGETS_FOR_SHOOTCOOLDOWN_UPGRADE;
