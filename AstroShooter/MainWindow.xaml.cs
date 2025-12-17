@@ -39,7 +39,7 @@ namespace AstroShooter
         private static readonly ushort SPEED_UPGRADE_AMOUNT = 50;
         private static readonly double SHOOTCOOLDOWN_UPGRADE_AMOUNT = 0.05;
         private static readonly uint MAX_PLAYER_SPEED = 800;
-        private static readonly double ENEMY_SPEED = 500; // Vitesse de déplacement des ennemis
+        private static readonly double ENEMY_SPEED = 100; // Vitesse de déplacement des ennemis
         private static readonly double INVINCIBILITY_DURATION = 2.0; // Durée d'invincibilité en secondes
         private bool isInvincible = false;
         private double invincibilityTimer = 0;
@@ -230,7 +230,6 @@ namespace AstroShooter
             CenterMapOnPlayer();
             music.Stop();
             music.Play();
-            ShowStartScreen();
         }
 
         // =====================
@@ -301,6 +300,140 @@ namespace AstroShooter
         // ENEMIES
         // =====================
 
+        private async void KillEnemy(Image enemy)
+        {
+            // Retirer de la liste des ennemis actifs
+            enemies.Remove(enemy);
+
+            // Ajouter aux ennemis morts
+            deadEnemies.Add(enemy);
+
+            // Afficher le sprite "dead"
+            enemy.Source = enemyDeadImage;
+
+#if DEBUG
+            Console.WriteLine("Ennemi tué !");
+#endif
+
+            // Attendre 3 secondes puis supprimer
+            await Task.Delay(3000);
+
+            // Vérifier que l'ennemi existe toujours (au cas où la partie s'est arrêtée)
+            if (deadEnemies.Contains(enemy))
+            {
+                deadEnemies.Remove(enemy);
+                mapCanvas.Children.Remove(enemy);
+            }
+
+            int newEnemyCount = rnd.Next(1, 3); // 1 ou 2 nouveaux ennemis
+            for (int i = 0; i < newEnemyCount; i++)
+            {
+                AddEnemy();
+            }
+        }
+
+        private void MoveEnemies(double deltaTime)
+        {
+            // Position du joueur dans le monde
+            double playerScreenX = Canvas.GetLeft(player);
+            double playerScreenY = Canvas.GetTop(player);
+            double playerWorldX = playerScreenX - mapOffsetX;
+            double playerWorldY = playerScreenY - mapOffsetY;
+
+            // Hitbox du joueur
+            Rect playerRect = new Rect(playerWorldX, playerWorldY, player.Width, player.Height);
+
+            for (int i = enemies.Count - 1; i >= 0; i--)
+            {
+                Image enemy = enemies[i];
+
+                double enemyX = Canvas.GetLeft(enemy);
+                double enemyY = Canvas.GetTop(enemy);
+
+                // Calculer la direction vers le joueur
+                double dirX = playerWorldX - enemyX;
+                double dirY = playerWorldY - enemyY;
+
+                // Normaliser le vecteur direction
+                double length = Math.Sqrt(dirX * dirX + dirY * dirY);
+                if (length > 0)
+                {
+                    dirX /= length;
+                    dirY /= length;
+                }
+
+                // Nouvelle position proposée
+                double newX = enemyX + dirX * ENEMY_SPEED * deltaTime;
+                double newY = enemyY + dirY * ENEMY_SPEED * deltaTime;
+
+                // Vérifier collision avec les obstacles
+                Rect enemyRectX = new Rect(newX, enemyY, enemy.Width, enemy.Height);
+                Rect enemyRectY = new Rect(enemyX, newY, enemy.Width, enemy.Height);
+
+                bool canMoveX = !CheckCollision(enemyRectX);
+                bool canMoveY = !CheckCollision(enemyRectY);
+
+                if (canMoveX)
+                {
+                    Canvas.SetLeft(enemy, newX);
+                    enemyX = newX;
+                }
+                if (canMoveY)
+                {
+                    Canvas.SetTop(enemy, newY);
+                    enemyY = newY;
+                }
+
+                // Vérifier collision avec le joueur
+                Rect enemyRect = new Rect(enemyX, enemyY, enemy.Width, enemy.Height);
+                if (enemyRect.IntersectsWith(playerRect))
+                {
+                    OnPlayerHit();
+                }
+            }
+        }
+
+        private void OnPlayerHit()
+        {
+            if (isInvincible) return;
+
+            RemoveLife();
+            StartInvincibility();
+
+#if DEBUG
+            Console.WriteLine("Joueur touché par un ennemi !");
+#endif
+        }
+
+        private void StartInvincibility()
+        {
+            isInvincible = true;
+            invincibilityTimer = INVINCIBILITY_DURATION;
+        }
+
+        private void UpdateInvincibility(double deltaTime)
+        {
+            if (!isInvincible) return;
+
+            invincibilityTimer -= deltaTime;
+
+            // Effet de clignotement du joueur
+            if ((int)(invincibilityTimer * 10) % 2 == 0)
+            {
+                player.Opacity = 0.5;
+            }
+            else
+            {
+                player.Opacity = 1.0;
+            }
+
+            // Fin de l'invincibilité
+            if (invincibilityTimer <= 0)
+            {
+                isInvincible = false;
+                player.Opacity = 1.0;
+            }
+        }
         public void AddEnemy()
         {
             // liste pour noter les coordonnées (Col, Row) libres
@@ -1126,6 +1259,7 @@ namespace AstroShooter
         private void Quit()
         {
             StopGame();
+            ShowStartScreen();
         }
 
         private void GameOverScreen()
@@ -1165,139 +1299,6 @@ namespace AstroShooter
             music.Play();
         }
 
-        private async void KillEnemy(Image enemy)
-        {
-            // Retirer de la liste des ennemis actifs
-            enemies.Remove(enemy);
-    
-            // Ajouter aux ennemis morts
-            deadEnemies.Add(enemy);
-    
-            // Afficher le sprite "dead"
-            enemy.Source = enemyDeadImage;
-
-#if DEBUG
-            Console.WriteLine("Ennemi tué !");
-#endif
-
-            // Attendre 3 secondes puis supprimer
-            await Task.Delay(3000);
-
-            // Vérifier que l'ennemi existe toujours (au cas où la partie s'est arrêtée)
-            if (deadEnemies.Contains(enemy))
-            {
-                deadEnemies.Remove(enemy);
-                mapCanvas.Children.Remove(enemy);
-            }
-
-            int newEnemyCount = rnd.Next(1, 3); // 1 ou 2 nouveaux ennemis
-            for (int i = 0; i < newEnemyCount; i++)
-            {
-                AddEnemy();
-            }
-        }
-
-        private void MoveEnemies(double deltaTime)
-        {
-            // Position du joueur dans le monde
-            double playerScreenX = Canvas.GetLeft(player);
-            double playerScreenY = Canvas.GetTop(player);
-            double playerWorldX = playerScreenX - mapOffsetX;
-            double playerWorldY = playerScreenY - mapOffsetY;
-
-            // Hitbox du joueur
-            Rect playerRect = new Rect(playerWorldX, playerWorldY, player.Width, player.Height);
-
-            for (int i = enemies.Count - 1; i >= 0; i--)
-            {
-                Image enemy = enemies[i];
-
-                double enemyX = Canvas.GetLeft(enemy);
-                double enemyY = Canvas.GetTop(enemy);
-
-                // Calculer la direction vers le joueur
-                double dirX = playerWorldX - enemyX;
-                double dirY = playerWorldY - enemyY;
-
-                // Normaliser le vecteur direction
-                double length = Math.Sqrt(dirX * dirX + dirY * dirY);
-                if (length > 0)
-                {
-                    dirX /= length;
-                    dirY /= length;
-                }
-
-                // Nouvelle position proposée
-                double newX = enemyX + dirX * ENEMY_SPEED * deltaTime;
-                double newY = enemyY + dirY * ENEMY_SPEED * deltaTime;
-
-                // Vérifier collision avec les obstacles
-                Rect enemyRectX = new Rect(newX, enemyY, enemy.Width, enemy.Height);
-                Rect enemyRectY = new Rect(enemyX, newY, enemy.Width, enemy.Height);
-
-                bool canMoveX = !CheckCollision(enemyRectX);
-                bool canMoveY = !CheckCollision(enemyRectY);
-
-                if (canMoveX)
-                {
-                    Canvas.SetLeft(enemy, newX);
-                    enemyX = newX;
-                }
-                if (canMoveY)
-                {
-                    Canvas.SetTop(enemy, newY);
-                    enemyY = newY;
-                }
-
-                // Vérifier collision avec le joueur
-                Rect enemyRect = new Rect(enemyX, enemyY, enemy.Width, enemy.Height);
-                if (enemyRect.IntersectsWith(playerRect))
-                {
-                    OnPlayerHit();
-                }
-            }
-        }
-
-        private void OnPlayerHit()
-        {
-            if (isInvincible) return;
-
-            RemoveLife();
-            StartInvincibility();
-
-#if DEBUG
-            Console.WriteLine("Joueur touché par un ennemi !");
-#endif
-}
-
-        private void StartInvincibility()
-        {
-            isInvincible = true;
-            invincibilityTimer = INVINCIBILITY_DURATION;
-        }
-
-        private void UpdateInvincibility(double deltaTime)
-        {
-            if (!isInvincible) return;
-
-            invincibilityTimer -= deltaTime;
-
-            // Effet de clignotement du joueur
-            if ((int)(invincibilityTimer * 10) % 2 == 0)
-            {
-                player.Opacity = 0.5;
-            }
-            else
-            {
-                player.Opacity = 1.0;
-            }
-
-            // Fin de l'invincibilité
-            if (invincibilityTimer <= 0)
-            {
-                isInvincible = false;
-                player.Opacity = 1.0;
-            }
-        }
+ 
     }
 }
