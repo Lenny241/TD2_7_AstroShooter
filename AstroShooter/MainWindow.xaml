@@ -10,7 +10,7 @@
         KeyUp="Window_KeyUp"
         Focusable="True"
         SizeToContent="WidthAndHeight"
-        WindowStartupLocation="CenterScreen" WindowStyle="None">
+        WindowStartupLocation="CenterScreen" WindowStyle="None" Icon="/asset/character/vaisseau.png">
 
     <Grid x:Name="gridMain" Height="850" Width="1375">
 
