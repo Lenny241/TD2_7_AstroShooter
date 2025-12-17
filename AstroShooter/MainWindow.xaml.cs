@@ -219,7 +219,10 @@ namespace AstroShooter
             isPlaying = false;
             isPaused = false;
             gameTime.Stop();
-            //GameCanvas.Children.Clear();
+            foreach (var bullet in bullets)
+            {
+                GameCanvas.Children.Remove(bullet);
+            }
             bullets.Clear();
             directions.Clear();
             obstacleHitboxes.Clear();
