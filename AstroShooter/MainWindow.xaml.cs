@@ -44,7 +44,6 @@ namespace AstroShooter
         private bool isInvincible = false;
         private double invincibilityTimer = 0;
 
-        private UCShop currentShop;
         private double timeSinceLastShoot = 0;
         private double shootCooldown = 0.3;
         Random rnd = new Random();
@@ -73,9 +72,7 @@ namespace AstroShooter
         private List<Vector> directions = new();
 
         private List<Image> meteors = new();
-
         private List<Rect> obstacleHitboxes = new();
-
 
         private Canvas mapCanvas = null!;
         private double mapOffsetX = 0;
@@ -153,12 +150,12 @@ namespace AstroShooter
             CreatePlayer();
             CenterMapOnPlayer();
             lastFrameTime = gameTime.Elapsed;
-            CompositionTarget.Rendering += GameLoop;
             GameCanvas.MouseLeftButtonDown += GameCanvas_MouseLeftButtonDown;
         }
 
         private void StartGame(object sender, RoutedEventArgs e)
         {
+            CompositionTarget.Rendering += GameLoop;
             GameCanvas.Focus();
 
             gameTime.Start();
@@ -189,6 +186,7 @@ namespace AstroShooter
             {
                 return;
             }
+            CompositionTarget.Rendering += GameLoop;
             ScreenContainer.Children.Clear();
             GameCanvas.Effect = null;
             gameTime.Start();
@@ -1191,7 +1189,7 @@ namespace AstroShooter
 
         public void ShowShopScreen()
         {
-            currentShop = new UCShop();
+            UCShop currentShop = new UCShop();
             music.Pause();
             gameTime.Stop();
             ScreenContainer.Children.Clear();
@@ -1246,6 +1244,7 @@ namespace AstroShooter
         }
         private void ShowPauseScreenUI()
         {
+            CompositionTarget.Rendering -= GameLoop;
             music.Pause();
             gameTime.Stop();
             Blur();
